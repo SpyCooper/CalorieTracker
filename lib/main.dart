@@ -101,11 +101,11 @@ class MealsPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             spacing: 5,
             children: [
-              // Total calories
+              // Max calories
               Column(
                 children: [
                   Text(
-                    'Total Calories',
+                    'Max Calories',
                     style: TextStyle(fontSize: 15),
                   ),
                   Text(
@@ -169,7 +169,7 @@ class MealsPage extends StatelessWidget {
             ],
           ),
           onTap: () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => NutritionFacts()));
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DailyNutritionMenu()));
           }
         ),
         // TODO - create meals from the day's meals
@@ -272,7 +272,7 @@ class MealBox extends StatelessWidget {
                   ],
                 ),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => NutritionFacts()));
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                 }
               )
             ),
@@ -291,7 +291,7 @@ class MealBox extends StatelessWidget {
                   ],
                 ),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => NutritionFacts()));
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                 }
               )
             ),
@@ -311,7 +311,7 @@ class MealBox extends StatelessWidget {
                   ],
                 ),
                 onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => NutritionFacts()));
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                 }
               )
             ),
@@ -365,7 +365,7 @@ class EditMealMenu extends StatelessWidget {
         children: [
           // Calories
           SizedBox(
-            width: 380,
+            width: 350,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -529,7 +529,6 @@ class TypeOfMealDeletion extends StatelessWidget {
   }
 }
 
-
 class AddNewMeal extends StatelessWidget {
   const AddNewMeal({super.key});
 
@@ -617,8 +616,8 @@ class AddNewMeal extends StatelessWidget {
   }
 }
 
-class NutritionFacts extends StatelessWidget {
-  const NutritionFacts({super.key});
+class FoodNutritionFacts extends StatelessWidget {
+  const FoodNutritionFacts({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -635,7 +634,7 @@ class NutritionFacts extends StatelessWidget {
           Text('Food Name', style: TextStyle(fontSize: 25),),
           // Calories
           SizedBox(
-            width: 380,
+            width: 350,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -828,21 +827,101 @@ class ProgressPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      spacing: 50,
+      spacing: 15,
       children: [
-        // TODO - check the safe area works correctly
-        SafeArea(
-          child:Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Progress',
-                style: TextStyle(fontSize: 30),
-              ),
-            ],
-          )
+        // spacer
+        SizedBox(height: 0,),
+        // Title
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Progress',
+              style: TextStyle(fontSize: 30),
+            ),
+          ],
         ),
-        GridPaper()
+        // Today's info
+        Column(
+          spacing: 10,
+          children: [
+            Text('Today\'s Nutrition Facts', style: TextStyle(fontSize: 20, decoration: TextDecoration.underline,)),
+            DailyNutritionFacts(),
+          ]
+        )
+      ]
+    );
+  }
+}
+
+
+class DailyNutritionMenu extends StatelessWidget {
+  const DailyNutritionMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      // TODO - change name of the meal bar to be the meal
+      appBar: AppBar(title: Text('Today\'s Nutrition Facts'),),
+      body: DailyNutritionFacts()
+    );
+  }
+}
+
+class DailyNutritionFacts extends StatelessWidget {
+  const DailyNutritionFacts({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      spacing: 15,
+      children: [
+        // Calories
+        Column(
+          spacing: 5,
+          children: [
+            SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Max Calories', style: TextStyle(fontSize: 25),),
+                  Text('2523', style: TextStyle(fontSize: 25),),
+                ]
+              ),
+            ),
+            SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Calories Used', style: TextStyle(fontSize: 25),),
+                  Text('1932', style: TextStyle(fontSize: 25),),
+                ]
+              ),
+            ),
+            SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Calories Left', style: TextStyle(fontSize: 25),),
+                  Text('123', style: TextStyle(fontSize: 25),),
+                ]
+              ),
+            ),
+          ],
+        ),
+        // Macros
+        Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
+        MacroBreakdown(),
+        // TODO - do a possible mean breakdown that shows what percentage each meal contributes to goals
+        // Meal Breakdowns
+        // Text('Meal Breakdowns', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
+        // GridView.builder(gridDelegate: gridDelegate, itemBuilder: itemBuilder)
       ]
     );
   }
@@ -854,69 +933,126 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      spacing: 10,
       children: [
-        // TODO - check the safe area works correctly
-        SafeArea(
-          child:Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Settings',
-                style: TextStyle(fontSize: 30),
-              ),
-            ],
-          )
+        // spacer
+        SizedBox(height: 0,),
+        // Title
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Settings',
+              style: TextStyle(fontSize: 30),
+            ),
+          ],
         ),
         // Spacer
-        SizedBox(height: 30,),
-        // TODO - switch all the options to be buttons
+        SizedBox(height: 10,),
         // Option 1
         // NOTE: only option 1 needs the top and bottom borders, all other should only have a bottom border
         Container(
-          decoration: BoxDecoration(border: Border(top: BorderSide(), bottom: BorderSide())),
-          child: SizedBox(
-            width: 350,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Option 1', style: TextStyle(fontSize: 20)),
-                Icon(Icons.arrow_right_sharp, size: 30,),
-              ],
-            )
+          decoration: BoxDecoration(border: Border(bottom: BorderSide())),
+          child: InkWell(
+            child: SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Calories and Macro Goals', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.arrow_right_sharp, size: 30,),
+                ],
+              )
+            ),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => CaloriesAndMacrosGoalsMenu()));
+            }
           )
         ),
         // Option 2
         Container(
           decoration: BoxDecoration(border: Border(bottom: BorderSide())),
-          child: SizedBox(
-            width: 350,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Option 2', style: TextStyle(fontSize: 20)),
-                Icon(Icons.arrow_right_sharp, size: 30,),
-              ],
-            )
+          child: InkWell(
+            child: SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Default Meals', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.arrow_right_sharp, size: 30,),
+                ],
+              )
+            ),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => DefaultMealsMenu()));
+            }
           )
         ),
         // Option 3
         Container(
           decoration: BoxDecoration(border: Border(bottom: BorderSide())),
-          child: SizedBox(
-            width: 350,
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text('Option 3', style: TextStyle(fontSize: 20)),
-                Icon(Icons.arrow_right_sharp, size: 30,),
-              ],
-            )
+          child: InkWell(
+            child: SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Saved Foods', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.arrow_right_sharp, size: 30,),
+                ],
+              )
+            ),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => SavedFoodsMenu()));
+            }
           )
         ),
       ]
+    );
+  }
+}
+
+class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
+  const CaloriesAndMacrosGoalsMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      // TODO - change name of the meal bar to be the meal
+      appBar: AppBar(title: Text('Calories and Macro Goals'),),
+      body: Placeholder()
+    );
+  }
+}
+
+class DefaultMealsMenu extends StatelessWidget {
+  const DefaultMealsMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      // TODO - change name of the meal bar to be the meal
+      appBar: AppBar(title: Text('Default Meals'),),
+      body: Placeholder()
+    );
+  }
+}
+
+class SavedFoodsMenu extends StatelessWidget {
+  const SavedFoodsMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      // TODO - change name of the meal bar to be the meal
+      appBar: AppBar(title: Text('Saved Foods'),),
+      body: Placeholder()
     );
   }
 }
