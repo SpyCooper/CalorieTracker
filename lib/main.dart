@@ -232,32 +232,27 @@ class MealBox extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.blueGrey,
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Text('Meal 1', style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.left),
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        // TODO - edit meal
-                        onPressed: () {
-                          Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditMealMenu()));
-                        }
-                      )
-                    ],
-                  ),
-                  // TODO - calories needs to calculate this based on the food in the meal
-                  InkWell(
-                    child: Text(
+              child: InkWell(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      spacing: 5,
+                      children: [
+                        Text('Meal 1', style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.left),
+                        Icon(Icons.edit, color: const Color.fromARGB(255, 87, 87, 87),),
+                      ],
+                    ),
+                    // TODO - calories needs to calculate this based on the food in the meal
+                    Text(
                       '400',
                       style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.right
                     ),
-                    onTap: () {
-                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => NutritionFacts()));
-                    }
-                  ),
-                ],
+                  ],
+                ),
+                onTap: () {
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditMealMenu()));
+                }
               )
             ),
             // TODO - every other entry needs to have a grey background
@@ -365,77 +360,91 @@ class EditMealMenu extends StatelessWidget {
     (
       // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Edit Meal 1'),),
-      body: Container(
-        child: Column(
-          spacing: 15,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        spacing: 15,
+        children: [
+          // Calories
+          SizedBox(
+            width: 380,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Labels for the inputs
-                Column(
-                  spacing: 30,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Meal Name', style: TextStyle(fontSize: 17)),
-                  ],
-                ),
-                // spacer
-                SizedBox(width: 50,),
-                // Input fields
-                Column(
-                  spacing: 7,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 175,
-                      height: 50,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          // TODO - change the hint text to default to the meal name
-                          hintText: 'Name',
-                        ),
+                Text('Calories', style: TextStyle(fontSize: 25),),
+                Text('1023', style: TextStyle(fontSize: 25),),
+              ]
+            ),
+          ),
+          // Macros
+          Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
+          MacroBreakdown(),
+          // Options
+          Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Labels for the inputs
+              Column(
+                spacing: 30,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Meal Name', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - change the hint text to default to the meal name
+                        hintText: 'Name',
                       ),
                     ),
-                  ],
-                )
-              ],
-            ),
-            // Spacer
-            SizedBox(height: 75,),
-            // Save Button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                fixedSize: const Size(250, 50),
-                foregroundColor: Colors.blueAccent, // text color
-                side: BorderSide(width: 3, color: Colors.blueAccent)
-                ),
-              child: Text('Save', style: TextStyle(fontSize: 20)),
-              onPressed: () => {
-                // TODO - save button
-                print('finish save button for edit meal')
-              },
-            ),
-            // Remove button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                fixedSize: const Size(250, 50),
-                foregroundColor: Colors.red, // text color
-                side: BorderSide(width: 3, color: Colors.red)
-                ),
-              child: Text('Remove Meal', style: TextStyle(fontSize: 20)),
-              onPressed: () => {
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) => RemoveMealPopUp()
-                )
-              },
-            )
-          ]
-        )
+                  ),
+                ],
+              )
+            ],
+          ),
+          // Spacer
+          SizedBox(height: 75,),
+          // Save Button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for edit meal')
+            },
+          ),
+          // Remove button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.red, // text color
+              side: BorderSide(width: 3, color: Colors.red)
+              ),
+            child: Text('Remove Meal', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) => RemoveMealPopUp()
+              )
+            },
+          )
+        ]
       )
     );
   }
@@ -529,81 +538,80 @@ class AddNewMeal extends StatelessWidget {
     return Scaffold
     (
       appBar: AppBar(title: Text('Add New Meal'),),
-      body: Container(
-        child: Column(
-          spacing: 15,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Labels for the inputs
-                Column(
-                  spacing: 30,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Meal Name', style: TextStyle(fontSize: 17)),
-                    Text('Type of Meal', style: TextStyle(fontSize: 17)),
-                  ],
-                ),
-                // spacer
-                SizedBox(width: 50,),
-                // Input fields
-                Column(
-                  spacing: 7,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 175,
-                      height: 50,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          hintText: 'Name',
-                        ),
+      body: Column(
+        spacing: 15,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Labels for the inputs
+              Column(
+                spacing: 30,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Meal Name', style: TextStyle(fontSize: 17)),
+                  Text('Type of Meal', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Name',
                       ),
                     ),
-                    SizedBox(
-                      width: 175,
-                      height: 50,
-                      child: DropdownButton<String>(
-                          hint: Text('Add Meal Type'),
-                          // TODO - implement changing daily meals based on the day's meal and clean this up
-                          items: <String>['Add for Today Only', 'Add to Daily Meals'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          
-                          // TODO - change the state for the selected meal type
-                          onChanged:(String? newValue) {
-                            // selectedValue = newValue;
-                          },
-                        ),
-                    )
-                  ],
-                )
-              ],
-            ),
-            // Spacer
-            SizedBox(height: 75,),
-            // Save Button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                fixedSize: const Size(250, 50),
-                foregroundColor: Colors.blueAccent, // text color
-                side: BorderSide(width: 3, color: Colors.blueAccent)
-                ),
-              child: Text('Save', style: TextStyle(fontSize: 20)),
-              onPressed: () => {
-                // TODO - save button
-                print('finish save button for add new meal')
-              },
-            ),
-          ]
-        )
+                  ),
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: DropdownButton<String>(
+                        hint: Text('Add Meal Type'),
+                        // TODO - implement changing daily meals based on the day's meal and clean this up
+                        items: <String>['Add for Today Only', 'Add to Daily Meals'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        
+                        // TODO - change the state for the selected meal type
+                        onChanged:(String? newValue) {
+                          // selectedValue = newValue;
+                        },
+                      ),
+                  )
+                ],
+              )
+            ],
+          ),
+          // Spacer
+          SizedBox(height: 75,),
+          // Save Button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for add new meal')
+            },
+          ),
+        ]
+      
       )
     );
   }
@@ -621,112 +629,110 @@ class NutritionFacts extends StatelessWidget {
         title: Text('Nutrition Facts'),
         ),
 
-      body: Container(
-        child: Column(
-          spacing: 15,
-          children: [
-            Text('Food Name', style: TextStyle(fontSize: 25),),
-            // Calories
-            SizedBox(
-              width: 380,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Calories', style: TextStyle(fontSize: 25),),
-                  Text('739', style: TextStyle(fontSize: 25),),
-                ]
-              ),
-            ),
-            // Macros
-            Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-            MacroBreakdown(),
-            // Options
-            Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
-            // Labels for inputs
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
+        spacing: 15,
+        children: [
+          Text('Food Name', style: TextStyle(fontSize: 25),),
+          // Calories
+          SizedBox(
+            width: 380,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column(
-                  spacing: 30,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Serving Size', style: TextStyle(fontSize: 17)),
-                    Text('Selected Meal', style: TextStyle(fontSize: 17)),
-                  ],
-                ),
-                // spacer
-                SizedBox(width: 75,),
-                // Input fields
-                Column(
-                  spacing: 7,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    SizedBox(
-                      width: 150,
-                      height: 50,
-                      child: TextField(
-                        decoration: InputDecoration(
-                          border: OutlineInputBorder(),
-                          // TODO - default hint text to the selected serving size
-                          hintText: 'Decimal Size',
-                        ),
+                Text('Calories', style: TextStyle(fontSize: 25),),
+                Text('739', style: TextStyle(fontSize: 25),),
+              ]
+            ),
+          ),
+          // Macros
+          Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
+          MacroBreakdown(),
+          // Options
+          Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          // Labels for inputs
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Column(
+                spacing: 30,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Serving Size', style: TextStyle(fontSize: 17)),
+                  Text('Selected Meal', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 75,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default hint text to the selected serving size
+                        hintText: 'Decimal Size',
                       ),
                     ),
-                    SizedBox(
-                      width: 150,
-                      height: 50,
-                      child: DropdownButton<String>(
-                          hint: Text('Select Meal'),
-                          // TODO - implement multiple meals based on the day's meal and clean this up
-                          items: <String>['Meal 1', 'Meal 2', 'Meal 3', 'Meal 4'].map((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(value),
-                            );
-                          }).toList(),
-                          
-                          // TODO - add the state for the selected meal
-                          onChanged:(String? newValue) {
-                            // selectedValue = newValue;
-                          },
-                        ),
-                    )
-                  ],
-                )
-              ],
-            ),
-            // Spacer
-            SizedBox(height: 75,),
-            // Save Button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                fixedSize: const Size(250, 50),
-                foregroundColor: Colors.blueAccent, // text color
-                side: BorderSide(width: 3, color: Colors.blueAccent)
-                ),
-              child: Text('Save', style: TextStyle(fontSize: 20)),
-              onPressed: () => {
-                // TODO - save button
-                print('finish save button for nutrition facts')
-              },
-            ),
-            // Remove button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                fixedSize: const Size(250, 50),
-                foregroundColor: Colors.red, // text color
-                side: BorderSide(width: 3, color: Colors.red)
-                ),
-              child: Text('Remove Food', style: TextStyle(fontSize: 20)),
-              onPressed: () => {
-                // TODO - remove meal / remove food from meal
-                print('finish remove button on the nutrition facts')
-              },
-            )
-          ],
-        )
+                  ),
+                  SizedBox(
+                    width: 150,
+                    height: 50,
+                    child: DropdownButton<String>(
+                        hint: Text('Select Meal'),
+                        // TODO - implement multiple meals based on the day's meal and clean this up
+                        items: <String>['Meal 1', 'Meal 2', 'Meal 3', 'Meal 4'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        
+                        // TODO - add the state for the selected meal
+                        onChanged:(String? newValue) {
+                          // selectedValue = newValue;
+                        },
+                      ),
+                  )
+                ],
+              )
+            ],
+          ),
+          // Spacer
+          SizedBox(height: 75,),
+          // Save Button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for nutrition facts')
+            },
+          ),
+          // Remove button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.red, // text color
+              side: BorderSide(width: 3, color: Colors.red)
+              ),
+            child: Text('Remove Food', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - remove meal / remove food from meal
+              print('finish remove button on the nutrition facts')
+            },
+          )
+        ],
       ),
     );
   }
