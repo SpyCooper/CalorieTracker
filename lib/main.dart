@@ -114,7 +114,7 @@ class MealsPage extends StatelessWidget {
                   ),
                 ]
               ),
-              // plus
+              // minus
               Column(
                 children: [
                   Text(
@@ -122,7 +122,7 @@ class MealsPage extends StatelessWidget {
                     style: TextStyle(fontSize: 15),
                   ),
                   Text(
-                    '+',
+                    '-',
                     style: TextStyle(fontSize: 30),
                   ),
                 ]
@@ -363,20 +363,163 @@ class EditMealMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold
     (
-      // TODO - change name of the meal
-      appBar: AppBar(title: Text('Meal 1'),),
-
+      // TODO - change name of the meal bar to be the meal
+      appBar: AppBar(title: Text('Edit Meal 1'),),
       body: Container(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 15,
           children: [
-            Text('finish edit meal', style: TextStyle(fontSize: 30))
-          ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Labels for the inputs
+                Column(
+                  spacing: 30,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Meal Name', style: TextStyle(fontSize: 17)),
+                  ],
+                ),
+                // spacer
+                SizedBox(width: 50,),
+                // Input fields
+                Column(
+                  spacing: 7,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 175,
+                      height: 50,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          // TODO - change the hint text to default to the meal name
+                          hintText: 'Name',
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+            // Spacer
+            SizedBox(height: 75,),
+            // Save Button
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: const Size(250, 50),
+                foregroundColor: Colors.blueAccent, // text color
+                side: BorderSide(width: 3, color: Colors.blueAccent)
+                ),
+              child: Text('Save', style: TextStyle(fontSize: 20)),
+              onPressed: () => {
+                // TODO - save button
+                print('finish save button for edit meal')
+              },
+            ),
+            // Remove button
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: const Size(250, 50),
+                foregroundColor: Colors.red, // text color
+                side: BorderSide(width: 3, color: Colors.red)
+                ),
+              child: Text('Remove Meal', style: TextStyle(fontSize: 20)),
+              onPressed: () => {
+                showDialog(
+                  context: context,
+                  builder: (BuildContext context) => RemoveMealPopUp()
+                )
+              },
+            )
+          ]
         )
       )
     );
   }
 }
+
+// TODO - implement a pop up to remove a meal from the meal list
+class RemoveMealPopUp extends StatelessWidget {
+  const RemoveMealPopUp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 300,
+      height: 200,
+      child: AlertDialog(
+        title: const Text('Are you sure you want to remove this meal?'),
+        // content: const Text('Body text'),
+        actions: [
+          // Cancel button
+          TextButton(
+            child: Text('Cancel'),
+            onPressed:() {
+              Navigator.pop(context, 'Cancel');
+            },
+          ),
+          // Confirm Deletion
+          TextButton(
+            child: Text('Confirm'),
+            onPressed:() {
+              // push additional popup
+              Navigator.pop(context, 'Confirm');
+              showDialog(
+                  context: context,
+                  builder: (BuildContext context) => TypeOfMealDeletion()
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class TypeOfMealDeletion extends StatelessWidget {
+  const TypeOfMealDeletion({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 300,
+      height: 200,
+      child: AlertDialog(
+        title: const Text('How Should This Meal Be Removed?'),
+        content: const Text('Selecting "Today Only" will only remove the meal from today.\nSelecting "Future Days" will remove this meal from appearing by default in future days.'),
+        actions: [
+          // Cancel button
+          TextButton(
+            child: Text('Cancel'),
+            onPressed:() {
+              Navigator.pop(context, 'Cancel');
+            },
+          ),
+          // Remove just from the day's meals
+          TextButton(
+            child: Text('Today Only'),
+            onPressed:() {
+              // TODO - remove the meal just for today
+              Navigator.pop(context, 'Today Only');
+            },
+          ),
+          // Remove from daily meals
+          TextButton(
+            child: Text('Future Days'),
+            onPressed:() {
+              // TODO - remove from daily meals
+              Navigator.pop(context, 'From Future Days');
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 
 class AddNewMeal extends StatelessWidget {
   const AddNewMeal({super.key});
@@ -388,10 +531,78 @@ class AddNewMeal extends StatelessWidget {
       appBar: AppBar(title: Text('Add New Meal'),),
       body: Container(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          spacing: 15,
           children: [
-            Text('finish add new meal menu', style: TextStyle(fontSize: 30))
-          ],
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Labels for the inputs
+                Column(
+                  spacing: 30,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Meal Name', style: TextStyle(fontSize: 17)),
+                    Text('Type of Meal', style: TextStyle(fontSize: 17)),
+                  ],
+                ),
+                // spacer
+                SizedBox(width: 50,),
+                // Input fields
+                Column(
+                  spacing: 7,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    SizedBox(
+                      width: 175,
+                      height: 50,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: 'Name',
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 175,
+                      height: 50,
+                      child: DropdownButton<String>(
+                          hint: Text('Add Meal Type'),
+                          // TODO - implement changing daily meals based on the day's meal and clean this up
+                          items: <String>['Add for Today Only', 'Add to Daily Meals'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          
+                          // TODO - change the state for the selected meal type
+                          onChanged:(String? newValue) {
+                            // selectedValue = newValue;
+                          },
+                        ),
+                    )
+                  ],
+                )
+              ],
+            ),
+            // Spacer
+            SizedBox(height: 75,),
+            // Save Button
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: const Size(250, 50),
+                foregroundColor: Colors.blueAccent, // text color
+                side: BorderSide(width: 3, color: Colors.blueAccent)
+                ),
+              child: Text('Save', style: TextStyle(fontSize: 20)),
+              onPressed: () => {
+                // TODO - save button
+                print('finish save button for add new meal')
+              },
+            ),
+          ]
         )
       )
     );
@@ -428,82 +639,10 @@ class NutritionFacts extends StatelessWidget {
             ),
             // Macros
             Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // spacer
-                SizedBox(width: 7),
-                // Text column
-                Column(
-                  spacing: 7,
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    // Carbs
-                    Text('Carbs', style: TextStyle(fontSize: 17)),
-                    // Fats
-                    Text('Fats', style: TextStyle(fontSize: 17)),
-                    // Protein
-                    Text('Protein', style: TextStyle(fontSize: 17)),
-                  ]
-                ),
-                // spacer
-                SizedBox(width: 5),
-                // Bar column
-                Column(
-                  spacing: 22,
-                  children: [
-                    SizedBox(
-                      height: 7,
-                      width: 240,
-                      child: LinearProgressIndicator(
-                        // current / max
-                        value: 20 / 100,
-                        backgroundColor: const Color.fromARGB(88, 0, 197, 99),
-                        color: Color.fromARGB(255, 0, 197, 99),
-                      ),
-                    ),
-                    SizedBox(
-                      height: 7,
-                      width: 240,
-                      child: LinearProgressIndicator(
-                        // current / max
-                        value: 20 / 100,
-                        backgroundColor: const Color.fromARGB(88, 255, 172, 64),
-                        color: Colors.orangeAccent,
-                      ),
-                    ),
-                    SizedBox(
-                      height: 7,
-                      width: 240,
-                      child: LinearProgressIndicator(
-                        // current / max
-                        value: 20 / 100,
-                        backgroundColor: const Color.fromARGB(88, 255, 82, 82),
-                        color: Colors.redAccent,
-                      ),
-                    ),
-                  ]
-                ),
-                // spacer
-                SizedBox(width: 5),
-                // Value column
-                Column(
-                  spacing: 7,
-                  children: [
-                    // Carbs
-                    Text('100 / 100', style: TextStyle(fontSize: 17)),
-                    // Fats
-                    Text('100 / 100', style: TextStyle(fontSize: 17)),
-                    // Protein
-                    Text('100 / 100', style: TextStyle(fontSize: 17)),
-                  ],
-
-                ),
-              ]
-            ),
+            MacroBreakdown(),
             // Options
             Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+            // Labels for inputs
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -517,7 +656,8 @@ class NutritionFacts extends StatelessWidget {
                   ],
                 ),
                 // spacer
-                SizedBox(width: 100,),
+                SizedBox(width: 75,),
+                // Input fields
                 Column(
                   spacing: 7,
                   mainAxisAlignment: MainAxisAlignment.start,
@@ -529,25 +669,30 @@ class NutritionFacts extends StatelessWidget {
                       child: TextField(
                         decoration: InputDecoration(
                           border: OutlineInputBorder(),
+                          // TODO - default hint text to the selected serving size
                           hintText: 'Decimal Size',
                         ),
                       ),
                     ),
-                    DropdownButton<String>(
-                        hint: Text('Select Meal'),
-                        // TODO - implement multiple meals based on the day's meal and clean this up
-                        items: <String>['Meal 1', 'Meal 2', 'Meal 3', 'Meal 4'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        
-                        // TODO - add the state for the selected meal
-                        onChanged:(String? newValue) {
-                          // selectedValue = newValue;
-                        },
-                      )
+                    SizedBox(
+                      width: 150,
+                      height: 50,
+                      child: DropdownButton<String>(
+                          hint: Text('Select Meal'),
+                          // TODO - implement multiple meals based on the day's meal and clean this up
+                          items: <String>['Meal 1', 'Meal 2', 'Meal 3', 'Meal 4'].map((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(value),
+                            );
+                          }).toList(),
+                          
+                          // TODO - add the state for the selected meal
+                          onChanged:(String? newValue) {
+                            // selectedValue = newValue;
+                          },
+                        ),
+                    )
                   ],
                 )
               ],
@@ -564,7 +709,7 @@ class NutritionFacts extends StatelessWidget {
               child: Text('Save', style: TextStyle(fontSize: 20)),
               onPressed: () => {
                 // TODO - save button
-                print('finish save button')
+                print('finish save button for nutrition facts')
               },
             ),
             // Remove button
@@ -587,6 +732,89 @@ class NutritionFacts extends StatelessWidget {
   }
 }
 
+class MacroBreakdown extends StatelessWidget {
+  const MacroBreakdown({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // spacer
+        SizedBox(width: 7),
+        // Text column
+        Column(
+          spacing: 7,
+          mainAxisAlignment: MainAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            // Carbs
+            Text('Carbs', style: TextStyle(fontSize: 17)),
+            // Fats
+            Text('Fats', style: TextStyle(fontSize: 17)),
+            // Protein
+            Text('Protein', style: TextStyle(fontSize: 17)),
+          ]
+        ),
+        // spacer
+        SizedBox(width: 5),
+        // Bar column
+        Column(
+          spacing: 22,
+          children: [
+            SizedBox(
+              height: 7,
+              width: 240,
+              child: LinearProgressIndicator(
+                // current / max
+                value: 20 / 100,
+                backgroundColor: const Color.fromARGB(88, 0, 197, 99),
+                color: Color.fromARGB(255, 0, 197, 99),
+              ),
+            ),
+            SizedBox(
+              height: 7,
+              width: 240,
+              child: LinearProgressIndicator(
+                // current / max
+                value: 20 / 100,
+                backgroundColor: const Color.fromARGB(88, 255, 172, 64),
+                color: Colors.orangeAccent,
+              ),
+            ),
+            SizedBox(
+              height: 7,
+              width: 240,
+              child: LinearProgressIndicator(
+                // current / max
+                value: 20 / 100,
+                backgroundColor: const Color.fromARGB(88, 255, 82, 82),
+                color: Colors.redAccent,
+              ),
+            ),
+          ]
+        ),
+        // spacer
+        SizedBox(width: 5),
+        // Value column
+        Column(
+          spacing: 7,
+          children: [
+            // Carbs
+            Text('100 / 100', style: TextStyle(fontSize: 17)),
+            // Fats
+            Text('100 / 100', style: TextStyle(fontSize: 17)),
+            // Protein
+            Text('100 / 100', style: TextStyle(fontSize: 17)),
+          ],
+    
+        ),
+      ]
+    );
+  }
+}
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
