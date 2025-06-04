@@ -347,7 +347,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
       (
         appBar: AppBar(
           // TODO - change the 'meal' to show what meal the food would be added to
-          title: Text('Add new food to meal'),
+          title: Text('Add New Food to Meal'),
           // search or scan tabs selection
           bottom: TabBar(
             tabs: [
@@ -387,7 +387,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: const Color.fromARGB(255, 207, 207, 207),
+                        color: const Color.fromARGB(169, 207, 207, 207),
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -431,8 +431,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
                     ),
                   child: Text('Create New Food', style: TextStyle(fontSize: 20)),
                   onPressed: () => {
-                    // TODO - Create new food to database
-                    print('Create new food to database')
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()))
                   },
                 ),
               ],
@@ -445,6 +444,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
     );
   }
 }
+
 
 class EditMealMenu extends StatelessWidget {
   const EditMealMenu({super.key});
@@ -479,7 +479,7 @@ class EditMealMenu extends StatelessWidget {
             children: [
               // Labels for the inputs
               Column(
-                spacing: 30,
+                spacing: 33,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -640,7 +640,7 @@ class AddNewMeal extends StatelessWidget {
             children: [
               // Labels for the inputs
               Column(
-                spacing: 30,
+                spacing: 33,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -748,7 +748,7 @@ class FoodNutritionFacts extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Column(
-                spacing: 30,
+                spacing: 33,
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
@@ -852,8 +852,8 @@ class MacroBreakdown extends StatelessWidget {
           children: [
             // Carbs
             Text('Carbs', style: TextStyle(fontSize: 17)),
-            // Fats
-            Text('Fats', style: TextStyle(fontSize: 17)),
+            // Fat
+            Text('Fat', style: TextStyle(fontSize: 17)),
             // Protein
             Text('Protein', style: TextStyle(fontSize: 17)),
           ]
@@ -904,7 +904,7 @@ class MacroBreakdown extends StatelessWidget {
           children: [
             // Carbs
             Text('100 / 100', style: TextStyle(fontSize: 17)),
-            // Fats
+            // Fat
             Text('100 / 100', style: TextStyle(fontSize: 17)),
             // Protein
             Text('100 / 100', style: TextStyle(fontSize: 17)),
@@ -1148,6 +1148,167 @@ class SavedFoodsMenu extends StatelessWidget {
       // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Saved Foods'),),
       body: Placeholder()
+    );
+  }
+}
+
+class CreateNewFoodMenu extends StatelessWidget {
+  const CreateNewFoodMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Create a New Food'),),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 15,
+        children: [
+          SizedBox(height: 0,),
+          Text('Food Info', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Food Name', style: TextStyle(fontSize: 17)),
+                  Text('Calories', style: TextStyle(fontSize: 17)),
+                  Text('Carbs', style: TextStyle(fontSize: 17)),
+                  Text('Fat', style: TextStyle(fontSize: 17)),
+                  Text('Protein', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Name
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Name',
+                      ),
+                    ),
+                  ),
+                  // Calories
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Calories',
+                      ),
+                    ),
+                  ),
+                  // Carbs
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Carbs',
+                      ),
+                    ),
+                  ),
+                  // Fat
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Fat',
+                      ),
+                    ),
+                  ),
+                  // Protein
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Protein',
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+          Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Add to Meal?', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                SizedBox(
+                  width: 175,
+                  height: 50,
+                  child: DropdownButton<String>(
+                    // TODO - default the value to be no
+                    hint: Text('Select a Meal'),
+                    // TODO - Change this to show the meals that are available
+                    items: <String>['No', 'Meal 1', 'Meal 2', 'Meal 3'].map((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    // TODO - finish the changes
+                    onChanged:(String? newValue) {
+                      // selectedValue = newValue
+                    },
+                  ),
+                ),
+                ],
+              ),
+            ],
+          ),
+          // Spacer
+          SizedBox(height: 75,),
+          // Save Button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for add new meal')
+            },
+          ),
+        ]
+      
+      )
     );
   }
 }
