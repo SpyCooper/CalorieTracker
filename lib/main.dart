@@ -329,24 +329,119 @@ class MealBox extends StatelessWidget {
   }
 }
 
-class AddFoodMenu extends StatelessWidget {
+class AddFoodMenu extends StatefulWidget {
   const AddFoodMenu({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold
-    (
-      // TODO - change name of the meal bar to be the meal
-      appBar: AppBar(title: Text('Add new food to meal'),),
+  State<AddFoodMenu> createState() => _AddFoodMenuState();
+}
 
-      body: Container(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+class _AddFoodMenuState extends State<AddFoodMenu> {
+  final List<String> foods = <String>['Ramen', 'Rice', 'Chicken', 'Sushi','Pie', 'Sriracha', 'Takoyaki', 'Eggs','Cheese', 'Milk', 'Cereal', 'Bar', 'Whiskey', 'Fireball'];
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold
+      (
+        appBar: AppBar(
+          // TODO - change the 'meal' to show what meal the food would be added to
+          title: Text('Add new food to meal'),
+          // search or scan tabs selection
+          bottom: TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.search)),
+              Tab(icon: Icon(Icons.barcode_reader)),
+            ]
+          ),
+        ),
+
+        body: TabBarView(
           children: [
-            Text('finish list of foods', style: TextStyle(fontSize: 30))
-          ],
+            // Search Tab
+            Column(
+              spacing: 20,
+              children: [
+                SizedBox(height: 0,),
+                // search bar
+                SizedBox(
+                  width: 350,
+                  height: 50,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      // TODO - change the hint text to default to the meal name
+                      hintText: 'Search',
+                    ),
+                  ),
+                ),
+                // list of foods
+                SizedBox(
+                  width: 370,
+                  height: 570,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(8),
+                    // TODO - change based on the size of the foods saved
+                    itemCount: foods.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        height: 50,
+                        color: const Color.fromARGB(255, 207, 207, 207),
+                        child: InkWell(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                SizedBox(
+                                  width: 300,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('   ${foods[index]}', style: TextStyle(fontSize: 17),),
+                                      Text('200', style: TextStyle(fontSize: 17),),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: Icon(Icons.add),
+                                  onPressed: () {
+                                    // TODO - add food to that meal
+                                    print('Add food to meal');
+                                  },
+                                )
+                              ],
+                            ),
+                          onTap: () {
+                            // TODO - adjust the food nutrition to change based on it came from the add food menu
+                            // open Nutrition facts
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                          },
+                        ),
+                      );
+                    },
+                    separatorBuilder: (context, index) => const Divider(),
+                  ),
+                ),
+                // Create new food to database button
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(350, 50),
+                    foregroundColor: Colors.blueAccent, // text color
+                    side: BorderSide(width: 3, color: Colors.blueAccent)
+                    ),
+                  child: Text('Create New Food', style: TextStyle(fontSize: 20)),
+                  onPressed: () => {
+                    // TODO - Create new food to database
+                    print('Create new food to database')
+                  },
+                ),
+              ],
+            ),
+            // Scan Tab
+            Placeholder(),
+          ]
         )
-      )
+      ),
     );
   }
 }
