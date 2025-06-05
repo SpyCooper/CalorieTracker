@@ -1,6 +1,6 @@
-// import 'dart:nativewrappers/_internal/vm/lib/ffi_patch.dart';
-
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -72,11 +72,7 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.amber[800],
       ),
     
-    body: ListView(
-      children: [
-        page
-      ]
-    ),
+    body: page,
 
     resizeToAvoidBottomInset: false,
     );
@@ -88,9 +84,8 @@ class MealsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    return Column(
-      spacing: 25,
+    return ListView(
+      padding: EdgeInsets.all(20),
       children: [
         // spacer
         SizedBox(height: 0,),
@@ -98,107 +93,101 @@ class MealsPage extends StatelessWidget {
         InkWell(
           // TODO - Possibly change this to a bar instead of numbers
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            spacing: 5,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Max calories
+            Column(
             children: [
-              // Max calories
-              Column(
-                children: [
-                  Text(
-                    'Max Calories',
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  Text(
-                    '2000',
-                    style: TextStyle(fontSize: 30),
-                  ),
-                ]
+              Text(
+              'Max Calories',
+              style: TextStyle(fontSize: 15),
               ),
-              // minus
-              Column(
-                children: [
-                  Text(
-                    '',
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  Text(
-                    '-',
-                    style: TextStyle(fontSize: 30),
-                  ),
-                ]
+              Text(
+              '2000',
+              style: TextStyle(fontSize: 30),
               ),
-              // Calories Used
-              Column(
-                children: [
-                  Text(
-                    'Calories Used',
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  Text(
-                    '0',
-                    style: TextStyle(fontSize: 30),
-                  ),
-                ]
+            ]
+            ),
+            // minus
+            Column(
+            children: [
+              Text(
+              '',
+              style: TextStyle(fontSize: 15),
               ),
-              // equals
-              Column(
-                children: [
-                  Text(
-                    '',
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  Text(
-                    '=',
-                    style: TextStyle(fontSize: 30),
-                  ),
-                ]
+              Text(
+              '-',
+              style: TextStyle(fontSize: 30),
               ),
-              // Calories Left
-              Column(
-                children: [
-                  Text(
-                    'Calories Left',
-                    style: TextStyle(fontSize: 15),
-                  ),
-                  Text(
-                    '2000',
-                    style: TextStyle(fontSize: 30),
-                  ),
-                ]
+            ]
+            ),
+            // Calories Used
+            Column(
+            children: [
+              Text(
+              'Calories Used',
+              style: TextStyle(fontSize: 15),
               ),
-            ],
+              Text(
+              '0',
+              style: TextStyle(fontSize: 30),
+              ),
+            ]
+            ),
+            // equals
+            Column(
+            children: [
+              Text(
+              '',
+              style: TextStyle(fontSize: 15),
+              ),
+              Text(
+              '=',
+              style: TextStyle(fontSize: 30),
+              ),
+            ]
+            ),
+            // Calories Left
+            Column(
+            children: [
+              Text(
+              'Calories Left',
+              style: TextStyle(fontSize: 15),
+              ),
+              Text(
+              '2000',
+              style: TextStyle(fontSize: 30),
+              ),
+            ]
+            ),
+          ],
           ),
           onTap: () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => DailyNutritionMenu()));
+          Navigator.of(context).push(MaterialPageRoute(builder: (context) => DailyNutritionMenu()));
           }
         ),
+        SizedBox(height: 25),
         // TODO - create meals from the day's meals
         // MEAL 1
-        Container(
-          child: MealBox()
-        ),
+        MealBox(),
+        SizedBox(height: 25),
         // MEAL 2
-        Container(
-          child: MealBox()
-        ),
+        MealBox(),
+        SizedBox(height: 25),
         // MEAL 3
-        Container(
-          child: MealBox()
-        ),
+        MealBox(),
+        SizedBox(height: 25),
         // Add new meal button
-        Container(
-          child: Column(
-            children: [
-              ElevatedButton(
-                child: Text('Add new meal', style: TextStyle(fontSize: 20)),
-                // Icon(Icons.add_box),
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddNewMeal()));
-                }
-              )
-            ]
-          )
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: ElevatedButton(
+          child: Text('Add new meal', style: TextStyle(fontSize: 20)),
+          onPressed: () {
+            Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddNewMeal()));
+          }
+          ),
         ),
+        SizedBox(height: 25),
       ]
     );
   }
@@ -921,27 +910,56 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      spacing: 15,
+    return ListView(
+      padding: EdgeInsets.all(10),
       children: [
-        // spacer
-        SizedBox(height: 0,),
         // Title
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Progress',
-              style: TextStyle(fontSize: 30),
+            'Progress',
+            style: TextStyle(fontSize: 30),
             ),
           ],
         ),
+        // spacer
+        SizedBox(height: 10,),
         // Today's info
         Column(
           spacing: 10,
           children: [
             Text('Today\'s Nutrition Facts', style: TextStyle(fontSize: 20, decoration: TextDecoration.underline,)),
             DailyNutritionFacts(),
+          ]
+        ),
+        // spacer
+        SizedBox(height: 10,),
+        // Weight Tracking
+        Column(
+          spacing: 10,
+          children: [
+            Text('Weight Tracking', style: TextStyle(fontSize: 20, decoration: TextDecoration.underline,)),
+            WeightGraph(),
+            Container(
+              decoration: BoxDecoration(border: Border(bottom: BorderSide())),
+              child: InkWell(
+                child: SizedBox(
+                  width: 350,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Weight Log', style: TextStyle(fontSize: 20)),
+                      Icon(Icons.arrow_right_sharp, size: 30,),
+                    ],
+                  )
+                ),
+                onTap: () {
+                  // Navigator.of(context).push(MaterialPageRoute(builder: (context) => SavedFoodsMenu()));
+                }
+              )
+            )
           ]
         )
       ]
@@ -1016,11 +1034,64 @@ class DailyNutritionFacts extends StatelessWidget {
         // TODO - do a possible mean breakdown that shows what percentage each meal contributes to goals
         // Meal Breakdowns
         // Text('Meal Breakdowns', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-        // GridView.builder(gridDelegate: gridDelegate, itemBuilder: itemBuilder)
+        // GridView.builder(gridDelegate: gridDelegate, itemBuilder: itemBuilder),
       ]
     );
   }
 }
+
+class WeightGraph extends StatelessWidget {
+  const WeightGraph({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 400,
+      height: 400,
+      child: LineChart(
+        LineChartData( 
+          // disables a border around the graph
+          borderData: FlBorderData(show: false),
+          // labels
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1,
+                reservedSize: 40
+              ),
+            ),
+            topTitles: AxisTitles(), // defaults to nothing
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 5, // comment this to get the graph to auto scale
+                reservedSize: 40
+              ),
+            ),
+            rightTitles: AxisTitles(), // defaults to nothing
+          ),
+          // Intervale for the grid
+          gridData: FlGridData(
+            horizontalInterval: 5,
+            verticalInterval: 1,
+          ),
+          // disables the user from touching the graph
+          lineTouchData: LineTouchData(enabled: false),
+          // Data for the graph
+          lineBarsData: [
+            LineChartBarData(
+              spots: [
+              FlSpot(0, 280), FlSpot(1, 270), FlSpot(2, 275), FlSpot(3, 260),
+              ],
+            ),
+          ],
+        ), 
+      ),
+    );
+  }
+}
+
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
