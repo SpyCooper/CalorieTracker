@@ -799,6 +799,7 @@ class FoodNutritionFacts extends StatelessWidget {
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // TODO - save button
+              // TODO - saved food menu and home screen should show Save but add food menu should show add
               print('finish save button for nutrition facts')
             },
           ),
@@ -939,8 +940,13 @@ class ProgressPage extends StatelessWidget {
         Column(
           spacing: 10,
           children: [
+            // title
             Text('Weight Tracking', style: TextStyle(fontSize: 20, decoration: TextDecoration.underline,)),
+            // warning text
+            WeightWarning(),
+            // graph
             WeightGraph(),
+            // weight log button
             Container(
               decoration: BoxDecoration(border: Border(bottom: BorderSide())),
               child: InkWell(
@@ -956,7 +962,7 @@ class ProgressPage extends StatelessWidget {
                   )
                 ),
                 onTap: () {
-                  // Navigator.of(context).push(MaterialPageRoute(builder: (context) => SavedFoodsMenu()));
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => WeightLogMenu()));
                 }
               )
             )
@@ -967,6 +973,24 @@ class ProgressPage extends StatelessWidget {
   }
 }
 
+class WeightWarning extends StatelessWidget {
+  const WeightWarning({
+    super.key,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 330,
+      height: 50,
+      child: Text(
+        'Note: Weight can flucuate by every day and throughout each day. Look at progress over time.',
+        style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
 
 class DailyNutritionMenu extends StatelessWidget {
   const DailyNutritionMenu({super.key});
@@ -1082,7 +1106,7 @@ class WeightGraph extends StatelessWidget {
           lineBarsData: [
             LineChartBarData(
               spots: [
-              FlSpot(0, 280), FlSpot(1, 270), FlSpot(2, 275), FlSpot(3, 260),
+                FlSpot(0, 280), FlSpot(1, 270), FlSpot(2, 275), FlSpot(3, 260),
               ],
             ),
           ],
@@ -1092,6 +1116,269 @@ class WeightGraph extends StatelessWidget {
   }
 }
 
+class WeightLogMenu extends StatefulWidget {
+  const WeightLogMenu({super.key});
+
+  @override
+  State<WeightLogMenu> createState() => _WeightLogMenuState();
+}
+
+class _WeightLogMenuState extends State<WeightLogMenu> {
+  final List<String> dates = <String>['10/24', '10/25', '10/26', '10/27','10/28', '10/29', '10/30', '10/31','11/1', '11/11', '11/12', '11/13', '11/14', '11/16'];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      appBar: AppBar(title: Text('Weight Log'),),
+      body: SizedBox(
+        width: 500,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          spacing: 15,
+          children: [
+            SizedBox(height: 0,),
+            // weight warning
+            WeightWarning(),
+            // list of dates
+            SizedBox(
+              width: 370,
+              height: 630,
+              child: ListView.separated(
+                padding: const EdgeInsets.all(8),
+                // TODO - change based on the size of the lists
+                itemCount: dates.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                        height: 50,
+                        color: const Color.fromARGB(169, 207, 207, 207),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            SizedBox(
+                              width: 300,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text('   ${dates[index]}', style: TextStyle(fontSize: 17),),
+                                  Text('198', style: TextStyle(fontSize: 17),),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.more_horiz),
+                              onPressed: () {
+                                // TODO - edit weight
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditWeightMenu()));
+                              },
+                            )
+                          ],
+                        ),
+                      );
+                },
+                separatorBuilder: (context, index) => const Divider(),
+              ),
+            ),
+            // Log new weight to database button
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: const Size(350, 50),
+                foregroundColor: Colors.blueAccent, // text color
+                side: BorderSide(width: 3, color: Colors.blueAccent)
+                ),
+              child: Text('Log New Weight', style: TextStyle(fontSize: 20)),
+              onPressed: () => {
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => LogNewWeightMenu()))
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class LogNewWeightMenu extends StatelessWidget {
+  const LogNewWeightMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      appBar: AppBar(title: Text('Log New Weight'),),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 15,
+        children: [
+          SizedBox(height: 0,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // spacer
+              SizedBox(width: 20,),
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Date', style: TextStyle(fontSize: 17)),
+                  Text('Weight', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Name
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'mm/dd/yyyy',
+                      ),
+                    ),
+                  ),
+                  // Weight
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Weight',
+                      ),
+                    ),
+                  ),
+                ]
+              )
+            ],
+          ),
+          // Spacer
+          SizedBox(height: 150,),
+          // Save Button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for add new meal')
+            },
+          ),
+        ]
+      
+      )
+    );
+  }
+}
+
+class EditWeightMenu extends StatelessWidget {
+  const EditWeightMenu({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold
+    (
+      appBar: AppBar(title: Text('Edit Weight'),),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 15,
+        children: [
+          SizedBox(height: 0,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // spacer
+              SizedBox(width: 20,),
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Date', style: TextStyle(fontSize: 17)),
+                  Text('Weight', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Name
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default to already existing value
+                        hintText: '12/21/2024',
+                      ),
+                    ),
+                  ),
+                  // Weight
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default to already existing value
+                        hintText: '191',
+                      ),
+                    ),
+                  ),
+                ]
+              )
+            ],
+          ),
+          // Spacer
+          SizedBox(height: 150,),
+          // Save Button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for edit weight')
+            },
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.red, // text color
+              side: BorderSide(width: 3, color: Colors.red)
+              ),
+            child: Text('Delete', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - delete button
+              print('finish delete button for edit weight')
+            },
+          ),
+        ]
+      
+      )
+    );
+  }
+}
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -1174,6 +1461,26 @@ class SettingsPage extends StatelessWidget {
             onTap: () {
               Navigator.of(context).push(MaterialPageRoute(builder: (context) => SavedFoodsMenu()));
             }
+          ),
+        ),
+        // weight log
+        Container(
+          decoration: BoxDecoration(border: Border(bottom: BorderSide())),
+          child: InkWell(
+            child: SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Weight Log', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.arrow_right_sharp, size: 30,),
+                ],
+              )
+            ),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => WeightLogMenu()));
+            }
           )
         ),
       ]
@@ -1190,7 +1497,106 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
     (
       // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Calories and Macro Goals'),),
-      body: Placeholder()
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 15,
+        children: [
+          SizedBox(height: 0,),
+          Text('Goal Info', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Max Calories', style: TextStyle(fontSize: 17)),
+                  Text('Max Carbs', style: TextStyle(fontSize: 17)),
+                  Text('Max Fat', style: TextStyle(fontSize: 17)),
+                  Text('Max Protein', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Calories
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Calories',
+                      ),
+                    ),
+                  ),
+                  // Carbs
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Carbs',
+                      ),
+                    ),
+                  ),
+                  // Fat
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Fat',
+                      ),
+                    ),
+                  ),
+                  // Protein
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: 'Enter Protein',
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+          SizedBox(height: 200,),
+          SizedBox(
+            width: 320,
+            child: Text(
+              'Note: This will only change the goals for today and future days, but not past days.',
+              style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for add new meal')
+            },
+          ),
+        ]
+      )
     );
   }
 }
@@ -1204,21 +1610,238 @@ class DefaultMealsMenu extends StatelessWidget {
     (
       // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Default Meals'),),
-      body: Placeholder()
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 15,
+        children: [
+          SizedBox(height: 0,),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // spacer
+              SizedBox(width: 20,),
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Default Daily Meals', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 15,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Daily Meals
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default to already existing value
+                        hintText: '3',
+                      ),
+                    ),
+                  ),
+                ]
+              )
+            ]
+          ),
+          Text('Meal Data', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          // TODO - change this to list the number of meals that exist
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // spacer
+              SizedBox(width: 20,),
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Meal Name', style: TextStyle(fontSize: 17)),
+                  Text('Meal Name', style: TextStyle(fontSize: 17)),
+                  Text('Meal Name', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 30,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Daily Meals
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default to already existing value
+                        hintText: 'Meal 1',
+                      ),
+                    ),
+                  ),SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default to already existing value
+                        hintText: 'Meal 2',
+                      ),
+                    ),
+                  ),SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        // TODO - default to already existing value
+                        hintText: 'Meal 3',
+                      ),
+                    ),
+                  ),
+                ]
+              )
+            ]
+          ),
+          // spacer
+          SizedBox(height: 150,),
+          // Save button
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+              ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () => {
+              // TODO - save button
+              print('finish save button for add new meal')
+            },
+          ),
+        ]
+      )
     );
   }
 }
 
-class SavedFoodsMenu extends StatelessWidget {
+class SavedFoodsMenu extends StatefulWidget {
   const SavedFoodsMenu({super.key});
 
   @override
+  State<SavedFoodsMenu> createState() => _SavedFoodsMenuState();
+}
+
+class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
+  // TODO - figure out a way to make this work more seemlessly with the add food menu
+  final List<String> foods = <String>['Takoyaki', 'Eggs','Cheese', 'Milk', 'Cereal', 'Bar', 'Whiskey', 'Fireball','Ramen', 'Rice', 'Chicken', 'Sushi','Pie', 'Sriracha', ];
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold
-    (
-      // TODO - change name of the meal bar to be the meal
-      appBar: AppBar(title: Text('Saved Foods'),),
-      body: Placeholder()
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold
+      (
+        appBar: AppBar(
+          // TODO - change the 'meal' to show what meal the food would be added to
+          title: Text('Saved Foods'),
+          // search or scan tabs selection
+          bottom: TabBar(
+            tabs: [
+              Tab(icon: Icon(Icons.search)),
+              Tab(icon: Icon(Icons.barcode_reader)),
+            ]
+          ),
+        ),
+
+        body: TabBarView(
+          children: [
+            // Search Tab
+            Column(
+              spacing: 20,
+              children: [
+                SizedBox(height: 0,),
+                // search bar
+                SizedBox(
+                  width: 350,
+                  height: 50,
+                  child: TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      // TODO - change the hint text to default to the meal name
+                      hintText: 'Search',
+                    ),
+                  ),
+                ),
+                // list of foods
+                SizedBox(
+                  width: 370,
+                  height: 570,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(8),
+                    // TODO - change based on the size of the foods saved
+                    itemCount: foods.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        height: 50,
+                        color: const Color.fromARGB(169, 207, 207, 207),
+                        child: InkWell(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                SizedBox(
+                                  width: 330,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('   ${foods[index]}', style: TextStyle(fontSize: 17),),
+                                      Text('???', style: TextStyle(fontSize: 17),),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          onTap: () {
+                            // TODO - adjust the food nutrition to change based on it came from the add food menu
+                            // open Nutrition facts
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                          },
+                        ),
+                      );
+                    },
+                    separatorBuilder: (context, index) => const Divider(),
+                  ),
+                ),
+                // Create new food to database button
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(350, 50),
+                    foregroundColor: Colors.blueAccent, // text color
+                    side: BorderSide(width: 3, color: Colors.blueAccent)
+                    ),
+                  child: Text('Create New Food', style: TextStyle(fontSize: 20)),
+                  onPressed: () => {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()))
+                  },
+                ),
+              ],
+            ),
+            // Scan Tab
+            Placeholder(),
+          ]
+        )
+      ),
     );
   }
 }
