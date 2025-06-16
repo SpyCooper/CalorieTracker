@@ -337,10 +337,11 @@ class AddFoodMenu extends StatefulWidget {
 }
 
 class _AddFoodMenuState extends State<AddFoodMenu> {
-  final List<String> foods = <String>['Ramen', 'Rice', 'Chicken', 'Sushi','Pie', 'Sriracha', 'Takoyaki', 'Eggs','Cheese', 'Milk', 'Cereal', 'Bar', 'Whiskey', 'Fireball'];
-
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+
     return DefaultTabController(
       length: 2,
       child: Scaffold
@@ -357,6 +358,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
           ),
         ),
 
+        
         body: TabBarView(
           children: [
             // Search Tab
@@ -382,8 +384,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
                   height: 570,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    // TODO - change based on the size of the foods saved
-                    itemCount: foods.length,
+                    itemCount: appState.foods.length,
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
@@ -393,22 +394,15 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 SizedBox(
-                                  width: 300,
+                                  width: 330,
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('   ${foods[index]}', style: TextStyle(fontSize: 17),),
-                                      Text('200', style: TextStyle(fontSize: 17),),
+                                      Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
+                                      Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
                                     ],
                                   ),
                                 ),
-                                IconButton(
-                                  icon: Icon(Icons.add),
-                                  onPressed: () {
-                                    // TODO - add food to that meal
-                                    print('Add food to meal');
-                                  },
-                                )
                               ],
                             ),
                           onTap: () {
