@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/services.dart';
-
+import 'package:provider/provider.dart';
 
 
 void main() {
@@ -13,13 +13,26 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Calorie Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.white)
+    return ChangeNotifierProvider(
+      create: (context) => MyAppState(),
+      child: MaterialApp(
+        title: 'Calorie Tracker',
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.white)
+        ),
+        home: HomePage()
       ),
-      home: HomePage()
     );
+  }
+}
+
+class MyAppState extends ChangeNotifier {
+  // contains all the foods in the database
+  final List<FoodData> foods = [];
+
+  void addFoodToDatabase(FoodData food) {
+    foods.add(food);
+    notifyListeners();
   }
 }
 
@@ -1746,10 +1759,11 @@ class SavedFoodsMenu extends StatefulWidget {
 
 class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
   // TODO - figure out a way to make this work more seemlessly with the add food menu
-  final List<String> foods = <String>['Takoyaki', 'Eggs','Cheese', 'Milk', 'Cereal', 'Bar', 'Whiskey', 'Fireball','Ramen', 'Rice', 'Chicken', 'Sushi','Pie', 'Sriracha', ];
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return DefaultTabController(
       length: 2,
       child: Scaffold
@@ -1791,8 +1805,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                   height: 570,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    // TODO - change based on the size of the foods saved
-                    itemCount: foods.length,
+                    itemCount: appState.foods.length,
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
@@ -1806,8 +1819,8 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text('   ${foods[index]}', style: TextStyle(fontSize: 17),),
-                                      Text('???', style: TextStyle(fontSize: 17),),
+                                      Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
+                                      Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
                                     ],
                                   ),
                                 ),
@@ -1847,11 +1860,20 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
   }
 }
 
-class CreateNewFoodMenu extends StatelessWidget {
+class CreateNewFoodMenu extends StatefulWidget {
   const CreateNewFoodMenu({super.key});
 
   @override
+  State<CreateNewFoodMenu> createState() => _CreateNewFoodMenuState();
+}
+
+class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
+  FoodData tempData = new FoodData();
+
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Scaffold(
       appBar: AppBar(title: Text('Create a New Food'),),
       body: Column(
@@ -1893,7 +1915,7 @@ class CreateNewFoodMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Name',
                       ),
-                      onChanged: (value) => print(value)
+                      onChanged: (value) => tempData.name = value
                     ),
                   ),
                   // Calories
@@ -1908,8 +1930,8 @@ class CreateNewFoodMenu extends StatelessWidget {
                       // Restricts the input to number only
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      // TODO - change object
-                      onChanged: (value) => print(value)
+                      // parse the string to convert it to an int
+                      onChanged: (value) => tempData.calories = int.tryParse(value) ?? 0
                     ),
                   ),
                   // Carbs
@@ -1924,8 +1946,8 @@ class CreateNewFoodMenu extends StatelessWidget {
                       // Restricts the input to number only
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      // TODO - change object
-                      onChanged: (value) => print(value)
+                      // parse the string to convert it to an int
+                      onChanged: (value) => tempData.carbs = int.tryParse(value) ?? 0
                     ),
                   ),
                   // Fat
@@ -1940,8 +1962,8 @@ class CreateNewFoodMenu extends StatelessWidget {
                       // Restricts the input to number only
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      // TODO - change object
-                      onChanged: (value) => print(value)
+                      // parse the string to convert it to an int
+                      onChanged: (value) => tempData.fat = int.tryParse(value) ?? 0
                     ),
                   ),
                   // Protein
@@ -1956,8 +1978,8 @@ class CreateNewFoodMenu extends StatelessWidget {
                       // Restricts the input to number only
                       keyboardType: TextInputType.number,
                       inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      // TODO - change object
-                      onChanged: (value) => print(value)
+                      // parse the string to convert it to an int
+                      onChanged: (value) => tempData.protein = int.tryParse(value) ?? 0
                     ),
                   ),
                 ],
@@ -2017,9 +2039,19 @@ class CreateNewFoodMenu extends StatelessWidget {
               side: BorderSide(width: 3, color: Colors.blueAccent)
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
-            onPressed: () => {
-              // TODO - save the changes
-              print('finish save button for add new meal')
+            onPressed: () {
+              // DEBUG - print the food data to the console
+              // print('Food Name: ${tempData.name}');
+              // print('Calories: ${tempData.calories}');
+              // print('Carbs: ${tempData.carbs}');
+              // print('Fat: ${tempData.fat}');
+              // print('Protein: ${tempData.protein}');
+
+              // Add the food to the foods list
+              appState.addFoodToDatabase(tempData);
+              // Navigate back to the saved foods menu and reset the tempData
+              Navigator.of(context).pop();
+              tempData = new FoodData();
             },
           ),
         ]
@@ -2145,4 +2177,8 @@ class DefaultData {
   int dailyCarbs = 316;
 
   List<String> meals = ['Breakfast', 'Lunch', 'Dinner'];
+}
+
+class Foods {
+  List<FoodData> savedFoods = [];
 }
