@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/services.dart';
+
 
 
 void main() {
@@ -78,6 +80,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+// ================================= Meals Page =================================
 
 class MealsPage extends StatelessWidget {
   const MealsPage({super.key});
@@ -192,12 +196,6 @@ class MealsPage extends StatelessWidget {
     );
   }
 }
-
-/*
-Meal requires:
-name - name of the meal
-food list - list of the food in the meal
-*/
 
 class MealBox extends StatelessWidget {
   const MealBox({
@@ -433,7 +431,6 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
     );
   }
 }
-
 
 class EditMealMenu extends StatelessWidget {
   const EditMealMenu({super.key});
@@ -905,6 +902,8 @@ class MacroBreakdown extends StatelessWidget {
     );
   }
 }
+
+// ================================= Progress Page =================================
 
 class ProgressPage extends StatelessWidget {
   const ProgressPage({super.key});
@@ -1379,6 +1378,8 @@ class EditWeightMenu extends StatelessWidget {
     );
   }
 }
+
+// ================================= Settings =================================
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -1892,6 +1893,7 @@ class CreateNewFoodMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Name',
                       ),
+                      onChanged: (value) => print(value)
                     ),
                   ),
                   // Calories
@@ -1903,6 +1905,11 @@ class CreateNewFoodMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Calories',
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      // TODO - change object
+                      onChanged: (value) => print(value)
                     ),
                   ),
                   // Carbs
@@ -1914,6 +1921,11 @@ class CreateNewFoodMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Carbs',
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      // TODO - change object
+                      onChanged: (value) => print(value)
                     ),
                   ),
                   // Fat
@@ -1925,6 +1937,11 @@ class CreateNewFoodMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Fat',
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      // TODO - change object
+                      onChanged: (value) => print(value)
                     ),
                   ),
                   // Protein
@@ -1936,6 +1953,11 @@ class CreateNewFoodMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Protein',
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      // TODO - change object
+                      onChanged: (value) => print(value)
                     ),
                   ),
                 ],
@@ -1996,7 +2018,7 @@ class CreateNewFoodMenu extends StatelessWidget {
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
-              // TODO - save button
+              // TODO - save the changes
               print('finish save button for add new meal')
             },
           ),
@@ -2005,4 +2027,122 @@ class CreateNewFoodMenu extends StatelessWidget {
       )
     );
   }
+}
+
+
+// ================================= DATA =================================
+
+class DayData {
+  DateTime date = DateTime.now();
+  int maxCalories = 2600;
+  int maxProtein = 146;
+  int maxFat = 67;
+  int maxCarbs = 316;
+
+  List<MealData> meals = [];
+
+  int getCalories () {
+    int calories = 0;
+    for (var meal in meals) {
+      calories += meal.getCalories();
+    }
+    return calories;
+  }
+
+  int getProtein () {
+    int protein = 0;
+    for (var meal in meals) {
+      protein += meal.getProtein();
+    }
+    return protein;
+  }
+
+  int getFat () {
+    int fat = 0;
+    for (var meal in meals) {
+      fat += meal.getFat();
+    }
+    return fat;
+  }
+
+  int getCarbs () {
+    int carbs = 0;
+    for (var meal in meals) {
+      carbs += meal.getCarbs();
+    }
+    return carbs;
+  }
+
+  void addNewMeal(MealData meal) {
+    meals.add(meal);
+  }
+}
+
+class MealData {
+  String mealName = "Meal";
+  List<FoodData> foods = []; 
+
+  int getCalories () {
+    int calories = 0;
+    for (var food in foods) {
+      calories += food.calories;
+    }
+    return calories;
+  }
+
+  int getProtein () {
+    int protein = 0;
+    for (var food in foods) {
+      protein += food.protein;
+    }
+    return protein;
+  }
+
+  int getFat () {
+    int fat = 0;
+    for (var food in foods) {
+      fat += food.fat;
+    }
+    return fat;
+  }
+
+  int getCarbs () {
+    int carbs = 0;
+    for (var food in foods) {
+      carbs += food.carbs;
+    }
+    return carbs;
+  }
+
+  void addNewFood(FoodData food) {
+    foods.add(food);
+
+    // TODO - notify listeners
+  }
+}
+
+class FoodData {
+  String name ="Unnamed Food";
+  int calories = 0;
+  int protein = 0;
+  int fat = 0;
+  int carbs = 0;
+}
+
+class WeightList {
+  List<WeightData> weights = [];
+}
+
+class WeightData {
+  DateTime date = DateTime.now();
+  int weight = 999;
+}
+
+class DefaultData {
+  int dailyCalories = 2600;
+  int dailyProtein = 146;
+  int dailyFat = 67;
+  int dailyCarbs = 316;
+
+  List<String> meals = ['Breakfast', 'Lunch', 'Dinner'];
 }
