@@ -28,7 +28,16 @@ class MyApp extends StatelessWidget {
 
 class MyAppState extends ChangeNotifier {
   // contains all the foods in the database
-  final List<FoodData> foods = [];
+  List<FoodData> foods = [];
+
+  // current day data
+  DayData currentDay = DayData();
+
+  // default data
+  DefaultData defaultData = DefaultData();
+
+
+  FoodData currentlySelectedFood = FoodData();
 
   void addFoodToDatabase(FoodData food) {
     foods.add(food);
@@ -210,11 +219,16 @@ class MealsPage extends StatelessWidget {
   }
 }
 
-class MealBox extends StatelessWidget {
+class MealBox extends StatefulWidget {
   const MealBox({
     super.key,
   });
 
+  @override
+  State<MealBox> createState() => _MealBoxState();
+}
+
+class _MealBoxState extends State<MealBox> {
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -406,8 +420,8 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
                               ],
                             ),
                           onTap: () {
-                            // TODO - adjust the food nutrition to change based on it came from the add food menu
                             // open Nutrition facts
+                            appState.currentlySelectedFood = appState.foods[index];
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                           },
                         ),
@@ -538,7 +552,6 @@ class EditMealMenu extends StatelessWidget {
   }
 }
 
-// TODO - implement a pop up to remove a meal from the meal list
 class RemoveMealPopUp extends StatelessWidget {
   const RemoveMealPopUp({super.key});
 
@@ -704,11 +717,18 @@ class AddNewMeal extends StatelessWidget {
   }
 }
 
-class FoodNutritionFacts extends StatelessWidget {
+class FoodNutritionFacts extends StatefulWidget {
   const FoodNutritionFacts({super.key});
 
   @override
+  State<FoodNutritionFacts> createState() => _FoodNutritionFactsState();
+}
+
+class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Scaffold
     (
       // TODO - change name to show the name of the food, meal, or day
@@ -719,7 +739,7 @@ class FoodNutritionFacts extends StatelessWidget {
       body: Column(
         spacing: 15,
         children: [
-          Text('Food Name', style: TextStyle(fontSize: 25),),
+          Text('${appState.currentlySelectedFood.name}', style: TextStyle(fontSize: 25),),
           // Calories
           SizedBox(
             width: 350,
@@ -727,7 +747,7 @@ class FoodNutritionFacts extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Calories', style: TextStyle(fontSize: 25),),
-                Text('739', style: TextStyle(fontSize: 25),),
+                Text('${appState.currentlySelectedFood.calories}', style: TextStyle(fontSize: 25),),
               ]
             ),
           ),
@@ -826,13 +846,21 @@ class FoodNutritionFacts extends StatelessWidget {
   }
 }
 
-class MacroBreakdown extends StatelessWidget {
+class MacroBreakdown extends StatefulWidget {
   const MacroBreakdown({
     super.key,
   });
 
   @override
+  State<MacroBreakdown> createState() => _MacroBreakdownState();
+}
+
+// TODO - this only works with foods right now and not meals or days
+class _MacroBreakdownState extends State<MacroBreakdown> {
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -863,7 +891,7 @@ class MacroBreakdown extends StatelessWidget {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: 20 / 100,
+                value: appState.currentlySelectedFood.carbs / appState.defaultData.dailyCarbs,
                 backgroundColor: const Color.fromARGB(88, 0, 197, 99),
                 color: Color.fromARGB(255, 0, 197, 99),
               ),
@@ -873,7 +901,7 @@ class MacroBreakdown extends StatelessWidget {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: 20 / 100,
+                value: appState.currentlySelectedFood.fat / appState.defaultData.dailyFat,
                 backgroundColor: const Color.fromARGB(88, 255, 172, 64),
                 color: Colors.orangeAccent,
               ),
@@ -883,7 +911,7 @@ class MacroBreakdown extends StatelessWidget {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: 20 / 100,
+                value: appState.currentlySelectedFood.protein / appState.defaultData.dailyProtein,
                 backgroundColor: const Color.fromARGB(88, 255, 82, 82),
                 color: Colors.redAccent,
               ),
@@ -897,11 +925,11 @@ class MacroBreakdown extends StatelessWidget {
           spacing: 7,
           children: [
             // Carbs
-            Text('100 / 100', style: TextStyle(fontSize: 17)),
+            Text('${appState.currentlySelectedFood.carbs} / ${appState.defaultData.dailyCarbs}', style: TextStyle(fontSize: 17)),
             // Fat
-            Text('100 / 100', style: TextStyle(fontSize: 17)),
+            Text('${appState.currentlySelectedFood.fat} / ${appState.defaultData.dailyFat}', style: TextStyle(fontSize: 17)),
             // Protein
-            Text('100 / 100', style: TextStyle(fontSize: 17)),
+            Text('${appState.currentlySelectedFood.protein} / ${appState.defaultData.dailyProtein}', style: TextStyle(fontSize: 17)),
           ],
     
         ),
@@ -1821,8 +1849,8 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                               ],
                             ),
                           onTap: () {
-                            // TODO - adjust the food nutrition to change based on it came from the add food menu
                             // open Nutrition facts
+                            appState.currentlySelectedFood = appState.foods[index];
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                           },
                         ),
