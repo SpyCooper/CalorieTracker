@@ -26,18 +26,24 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// Current state of the app
 class MyAppState extends ChangeNotifier {
   // contains all the foods in the database
   List<FoodData> foods = [];
 
-  // current day data
-  DayData currentDay = DayData();
-
   // default data
   DefaultData defaultData = DefaultData();
 
+  // current day data
+  late DayData currentDay;
+
 
   FoodData currentlySelectedFood = FoodData();
+
+  // constructor
+  MyAppState() {
+    currentDay = DayData(defaultData);
+  }
 
   void addFoodToDatabase(FoodData food) {
     foods.add(food);
@@ -110,6 +116,8 @@ class MealsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return ListView(
       padding: EdgeInsets.all(20),
       children: [
@@ -129,7 +137,7 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
-              '2000',
+              '${appState.defaultData.dailyCalories}',
               style: TextStyle(fontSize: 30),
               ),
             ]
@@ -155,6 +163,7 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
+                // TODO - this needs to calculate the calories used from the meals
               '0',
               style: TextStyle(fontSize: 30),
               ),
@@ -181,7 +190,8 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
-              '2000',
+                // TODO - this needs to calculate the calories left from the meals
+              '${appState.defaultData.dailyCalories - 0}',
               style: TextStyle(fontSize: 30),
               ),
             ]
@@ -193,16 +203,16 @@ class MealsPage extends StatelessWidget {
           }
         ),
         SizedBox(height: 25),
-        // TODO - create meals from the day's meals
-        // MEAL 1
-        MealBox(),
-        SizedBox(height: 25),
-        // MEAL 2
-        MealBox(),
-        SizedBox(height: 25),
-        // MEAL 3
-        MealBox(),
-        SizedBox(height: 25),
+        // Dynamically create meal boxes based on the day's meals
+        ...List.generate(
+          appState.currentDay.meals.length,
+          (index) => Column(
+            children: [
+              MealBox(meal: appState.currentDay.meals[index]),
+              SizedBox(height: 25),
+            ],
+          ),
+        ),
         // Add new meal button
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -220,9 +230,11 @@ class MealsPage extends StatelessWidget {
 }
 
 class MealBox extends StatefulWidget {
-  const MealBox({
-    super.key,
-  });
+  // Make meal accessible from the state class
+  final MealData meal;
+  MealData get mealData => meal;
+
+  const MealBox({super.key, required this.meal});
 
   @override
   State<MealBox> createState() => _MealBoxState();
@@ -253,13 +265,14 @@ class _MealBoxState extends State<MealBox> {
                     Row(
                       spacing: 5,
                       children: [
-                        Text('Meal 1', style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.left),
+                        // sets the meal name
+                        Text(widget.meal.mealName, style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.left),
                         Icon(Icons.edit, color: const Color.fromARGB(255, 87, 87, 87),),
                       ],
                     ),
                     // TODO - calories needs to calculate this based on the food in the meal
                     Text(
-                      '400',
+                      '${widget.meal.getCalories()}',
                       style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.right
                     ),
                   ],
@@ -269,65 +282,32 @@ class _MealBoxState extends State<MealBox> {
                 }
               )
             ),
-            // TODO - every other entry needs to have a grey background
-            // Entry 1
-            Container(
-              decoration: BoxDecoration(
-                // border: Border.all(color: Colors.black),
-                color: const Color.fromARGB(255, 219, 219, 219)
-              ),
-              child: InkWell(
+            // Dynamically list foods in the meal with alternating background colors
+            ...List.generate(
+              widget.meal.foods.length,
+              (foodIndex) {
+              final food = widget.meal.foods[foodIndex];
+              final isGrey = foodIndex % 2 == 0;
+              return Container(
+                decoration: BoxDecoration(
+                color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                ),
+                child: InkWell(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // TODO - get the info from a food object
-                    Text('Food 1', style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                    Text('200', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                  Text(food.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                  Text('${food.calories}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
                   ],
                 ),
                 onTap: () {
+                  // Optionally set the selected food in app state if needed
+                  // context.read<MyAppState>().currentlySelectedFood = food;
                   Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                 }
-              )
-            ),
-            // Entry 2
-            Container(
-              decoration: BoxDecoration(
-                // border: Border.all(color: Colors.black),
-              ),
-              child: InkWell(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // TODO - get the info from a food object
-                    Text('Food 2', style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                    Text('200', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
-                  ],
                 ),
-                onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
-                }
-              )
-            ),
-            // Entry 3
-            Container(
-              decoration: BoxDecoration(
-                // border: Border.all(color: Colors.black),
-                color: const Color.fromARGB(255, 219, 219, 219)
-              ),
-              child: InkWell(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // TODO - get the info from a food object
-                    Text('Food 1', style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                    Text('200', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
-                }
-              )
+              );
+              }
             ),
             // Add button
             ElevatedButton(
@@ -724,6 +704,7 @@ class FoodNutritionFacts extends StatefulWidget {
   State<FoodNutritionFacts> createState() => _FoodNutritionFactsState();
 }
 
+// TODO - this only works from the add food menu and saved foods and not from the meals page
 class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
   @override
   Widget build(BuildContext context) {
@@ -2095,6 +2076,19 @@ class DayData {
 
   List<MealData> meals = [];
 
+  DayData(DefaultData defaultData) {
+    // Initialize meals with default meal names
+    for (var mealName in defaultData.meals) {
+      meals.add(MealData()..mealName = mealName);
+    }
+
+    // Set default max values
+    maxCalories = defaultData.dailyCalories;
+    maxProtein = defaultData.dailyProtein;
+    maxFat = defaultData.dailyFat;
+    maxCarbs = defaultData.dailyCarbs;
+  }
+
   int getCalories () {
     int calories = 0;
     for (var meal in meals) {
@@ -2199,8 +2193,4 @@ class DefaultData {
   int dailyCarbs = 316;
 
   List<String> meals = ['Breakfast', 'Lunch', 'Dinner'];
-}
-
-class Foods {
-  List<FoodData> savedFoods = [];
 }
