@@ -89,17 +89,23 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void removeMealFromDay(Meal meal) {
+  void removeMeal(Meal meal, {bool futureDays = false}) {
     // Remove the meal from the current day's meals
     currentDay.meals.remove(meal);
+    if (futureDays) {
+      // Remove the meal from default meals for future days
+      defaultData.meals.removeWhere((m) => m == meal.mealName);
+    }
     notifyListeners();
   }
 
-  void removeMealFromFutureDays(Meal meal) {
-    // Remove the meal from future days
-    defaultData.meals.removeWhere((m) => m == meal.mealName);
-    // Also remove it from the current day's meals
-    currentDay.meals.remove(meal);
+  void addMeal(Meal meal, {bool toDefault = false}) {
+    // Add the meal to the current day's meals
+    currentDay.meals.add(meal);
+    // Optionally add to default meals if not already present
+    if (toDefault && !defaultData.meals.contains(meal.mealName)) {
+      defaultData.meals.add(meal.mealName);
+    }
     notifyListeners();
   }
 
@@ -692,7 +698,7 @@ class TypeOfMealDeletion extends StatelessWidget {
           TextButton(
             child: Text('Today Only'),
             onPressed:() {
-              appState.removeMealFromDay(appState.currentlySelectedMeal);
+              appState.removeMeal(appState.currentlySelectedMeal);
               print(appState.currentDay.meals);
               print(appState.defaultData.meals);
               // pop all the way back to the home page
@@ -703,7 +709,7 @@ class TypeOfMealDeletion extends StatelessWidget {
           TextButton(
             child: Text('Future Days'),
             onPressed:() {
-              appState.removeMealFromFutureDays(appState.currentlySelectedMeal);
+              appState.removeMeal(appState.currentlySelectedMeal, futureDays: true);
               print(appState.currentDay.meals);
               print(appState.defaultData.meals);
               // pop all the way back to the home page
@@ -716,11 +722,23 @@ class TypeOfMealDeletion extends StatelessWidget {
   }
 }
 
-class AddNewMeal extends StatelessWidget {
+class AddNewMeal extends StatefulWidget {
   const AddNewMeal({super.key});
 
   @override
+  State<AddNewMeal> createState() => _AddNewMealState();
+}
+
+class _AddNewMealState extends State<AddNewMeal> {
+  String mealTypeValue = 'Add for Today Only'; // default value for the dropdown
+
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    Meal newMeal = Meal(mealName: 'Meal ${appState.currentDay.meals.length + 1}'); // default meal name
+    List<String> mealTypes = ['Add for Today Only', 'Add to Daily Meals'];
+    bool isDefaultMeal = false; // flag to check if the meal is a default meal
+
     return Scaffold
     (
       appBar: AppBar(title: Text('Add New Meal'),),
@@ -754,28 +772,34 @@ class AddNewMeal extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'Name',
+                        hintText: newMeal.mealName, // default meal name
                       ),
+
                     ),
                   ),
                   SizedBox(
                     width: 175,
                     height: 50,
                     child: DropdownButton<String>(
-                        hint: Text('Add Meal Type'),
-                        // TODO - implement changing daily meals based on the day's meal and clean this up
-                        items: <String>['Add for Today Only', 'Add to Daily Meals'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        
-                        // TODO - change the state for the selected meal type
-                        onChanged:(String? newValue) {
-                          // selectedValue = newValue;
-                        },
-                      ),
+                      value: mealTypeValue, // default value
+                      hint: Text('Add Meal Type'),
+                      items: mealTypes.map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged:(String? newValue) {
+                        if (newValue == 'Add for Today Only') {
+                          isDefaultMeal = false; // set the flag to false
+                        } else if (newValue == 'Add to Daily Meals') {
+                          isDefaultMeal = true; // set the flag to true
+                        }
+                        setState(() {
+                          mealTypeValue = newValue!;
+                        });
+                      },
+                    ),
                   )
                 ],
               )
@@ -792,8 +816,10 @@ class AddNewMeal extends StatelessWidget {
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
-              // TODO - save button
-              print('finish save button for add new meal')
+              // Add the new meal to the current day's meals
+              appState.addMeal(newMeal, toDefault: isDefaultMeal),
+              // Pop back to the home page
+              Navigator.of(context).popUntil((route) => route.isFirst),
             },
           ),
         ]
@@ -1434,7 +1460,7 @@ class LogNewWeightMenu extends StatelessWidget {
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // TODO - save button
-              print('finish save button for add new meal')
+              print('finish save button for log new weight')
             },
           ),
         ]
@@ -1756,7 +1782,7 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // TODO - save button
-              print('finish save button for add new meal')
+              print('finish save button for calories and macros goals')
             },
           ),
         ]
@@ -1920,7 +1946,7 @@ class DefaultMealsMenu extends StatelessWidget {
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // TODO - save button
-              print('finish save button for add new meal')
+              print('finish save button for default meals')
             },
           ),
         ]
