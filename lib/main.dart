@@ -1940,19 +1940,19 @@ class DefaultMealsMenu extends StatelessWidget {
           ),
           // spacer
           SizedBox(height: 150,),
-          // Save button
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
-              ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
-            onPressed: () => {
-              // TODO - save button
-              print('finish save button for default meals')
-            },
-          ),
+          // // Save button
+          // ElevatedButton(
+          //   style: ElevatedButton.styleFrom(
+          //     fixedSize: const Size(250, 50),
+          //     foregroundColor: Colors.blueAccent, // text color
+          //     side: BorderSide(width: 3, color: Colors.blueAccent)
+          //     ),
+          //   child: Text('Save', style: TextStyle(fontSize: 20)),
+          //   onPressed: () => {
+          //     // TODO - save button
+          //     print('finish save button for default meals')
+          //   },
+          // ),
         ]
       )
     );
@@ -1966,10 +1966,7 @@ class SavedFoodsMenu extends StatefulWidget {
   State<SavedFoodsMenu> createState() => _SavedFoodsMenuState();
 }
 
-// TODO - saved foods needs to go to a different UI so foods can be edited
 class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
-  // TODO - figure out a way to make this work more seemlessly with the add food menu
-
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -1979,7 +1976,6 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
       child: Scaffold
       (
         appBar: AppBar(
-          // TODO - change the 'meal' to show what meal the food would be added to
           title: Text('Saved Foods'),
           // search or scan tabs selection
           bottom: TabBar(
@@ -2055,8 +2051,10 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     side: BorderSide(width: 3, color: Colors.blueAccent)
                     ),
                   child: Text('Create New Food', style: TextStyle(fontSize: 20)),
-                  onPressed: () => {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()))
+                  onPressed: () {
+                    // TODO - saved foods needs to go to a different UI so foods can be edited
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()));
+                    print('Create New Food Button Pressed');
                   },
                 ),
               ],
