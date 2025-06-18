@@ -82,6 +82,12 @@ class MyAppState extends ChangeNotifier {
     currentlySelectedMeal = meal;
     notifyListeners();
   }
+
+  void setNewMealName(String newName) {
+    // Update the meal name of the currently selected meal
+    currentlySelectedMeal.mealName = newName;
+    notifyListeners();
+  }
 }
 
 class HomePage extends StatefulWidget {
@@ -312,6 +318,8 @@ class _MealBoxState extends State<MealBox> {
                   ],
                 ),
                 onTap: () {
+                  // Set the currently selected meal in app state
+                  context.read<MyAppState>().currentlySelectedMeal = widget.meal;
                   Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditMealMenu()));
                 }
               )
@@ -493,10 +501,12 @@ class EditMealMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Scaffold
     (
       // TODO - change name of the meal bar to be the meal
-      appBar: AppBar(title: Text('Edit Meal 1'),),
+      appBar: AppBar(title: Text('Edit ${appState.currentlySelectedMeal.mealName}'),),
       body: Column(
         spacing: 15,
         children: [
@@ -507,13 +517,17 @@ class EditMealMenu extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Calories', style: TextStyle(fontSize: 25),),
-                Text('1023', style: TextStyle(fontSize: 25),),
+                Text(appState.currentlySelectedMeal.getCalories().toString(), style: TextStyle(fontSize: 25),),
               ]
             ),
           ),
           // Macros
           Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-          MacroBreakdown(),
+          MacroBreakdown(
+            carbs: (appState.currentlySelectedMeal.getCarbs()).ceil(),
+            fat: (appState.currentlySelectedMeal.getFat()).ceil(),
+            protein: (appState.currentlySelectedMeal.getProtein()).ceil(),
+          ),
           // Options
           Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
           Row(
@@ -542,9 +556,12 @@ class EditMealMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        // TODO - change the hint text to default to the meal name
-                        hintText: 'Name',
+                        hintText: '${appState.currentlySelectedMeal.mealName.isEmpty ? 'Meal Name' : appState.currentlySelectedMeal.mealName}',
                       ),
+                      onChanged: (value) {
+                        // Update the meal name in the app state as the user types
+                        appState.setNewMealName(value);
+                      },
                     ),
                   ),
                 ],
@@ -788,7 +805,11 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           ),
           // Macros
           Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-          MacroBreakdown(),
+          MacroBreakdown(
+            carbs: (appState.currentlySelectedFood.foodData.carbs * appState.currentlySelectedFood.serving).ceil(),
+            fat: (appState.currentlySelectedFood.foodData.fat * appState.currentlySelectedFood.serving).ceil(),
+            protein: (appState.currentlySelectedFood.foodData.protein * appState.currentlySelectedFood.serving).ceil(),
+          ),
           // Options
           Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
           // Labels for inputs
@@ -902,8 +923,15 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
 }
 
 class MacroBreakdown extends StatefulWidget {
+  final int? carbs;
+  final int? fat;
+  final int? protein;
+
   const MacroBreakdown({
     super.key,
+    this.carbs,
+    this.fat,
+    this.protein,
   });
 
   @override
@@ -912,6 +940,11 @@ class MacroBreakdown extends StatefulWidget {
 
 // TODO - this only works with foods right now and not meals or days
 class _MacroBreakdownState extends State<MacroBreakdown> {
+
+  int get carbs => widget.carbs ?? 0;
+  int get fat => widget.fat ?? 0;
+  int get protein => widget.protein ?? 0;
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -946,7 +979,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: appState.currentlySelectedFood.foodData.carbs * appState.currentlySelectedFood.serving / appState.defaultData.dailyCarbs,
+                value: carbs / appState.defaultData.dailyCarbs,
                 backgroundColor: const Color.fromARGB(88, 0, 197, 99),
                 color: Color.fromARGB(255, 0, 197, 99),
               ),
@@ -956,7 +989,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: appState.currentlySelectedFood.foodData.fat  * appState.currentlySelectedFood.serving / appState.defaultData.dailyFat,
+                value: fat / appState.defaultData.dailyFat,
                 backgroundColor: const Color.fromARGB(88, 255, 172, 64),
                 color: Colors.orangeAccent,
               ),
@@ -966,7 +999,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: appState.currentlySelectedFood.foodData.protein  * appState.currentlySelectedFood.serving / appState.defaultData.dailyProtein,
+                value: protein / appState.defaultData.dailyProtein,
                 backgroundColor: const Color.fromARGB(88, 255, 82, 82),
                 color: Colors.redAccent,
               ),
@@ -980,11 +1013,11 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
           spacing: 7,
           children: [
             // Carbs
-            Text('${appState.currentlySelectedFood.foodData.carbs * appState.currentlySelectedFood.serving} / ${appState.defaultData.dailyCarbs}', style: TextStyle(fontSize: 17)),
+            Text('${carbs} / ${appState.defaultData.dailyCarbs}', style: TextStyle(fontSize: 17)),
             // Fat
-            Text('${appState.currentlySelectedFood.foodData.fat * appState.currentlySelectedFood.serving} / ${appState.defaultData.dailyFat}', style: TextStyle(fontSize: 17)),
+            Text('${fat} / ${appState.defaultData.dailyFat}', style: TextStyle(fontSize: 17)),
             // Protein
-            Text('${appState.currentlySelectedFood.foodData.protein * appState.currentlySelectedFood.serving} / ${appState.defaultData.dailyProtein}', style: TextStyle(fontSize: 17)),
+            Text('${protein } / ${appState.defaultData.dailyProtein}', style: TextStyle(fontSize: 17)),
           ],
     
         ),
@@ -1102,6 +1135,8 @@ class DailyNutritionFacts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Column(
       spacing: 15,
       children: [
@@ -1115,7 +1150,7 @@ class DailyNutritionFacts extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Max Calories', style: TextStyle(fontSize: 25),),
-                  Text('2523', style: TextStyle(fontSize: 25),),
+                  Text(appState.currentDay.maxCalories.toString(), style: TextStyle(fontSize: 25),),
                 ]
               ),
             ),
@@ -1125,7 +1160,7 @@ class DailyNutritionFacts extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Calories Used', style: TextStyle(fontSize: 25),),
-                  Text('1932', style: TextStyle(fontSize: 25),),
+                  Text(appState.currentDay.getCalories().toString(), style: TextStyle(fontSize: 25),),
                 ]
               ),
             ),
@@ -1135,7 +1170,7 @@ class DailyNutritionFacts extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Calories Left', style: TextStyle(fontSize: 25),),
-                  Text('123', style: TextStyle(fontSize: 25),),
+                  Text((appState.currentDay.maxCalories - appState.currentDay.getCalories()).toString(), style: TextStyle(fontSize: 25),),
                 ]
               ),
             ),
@@ -1143,7 +1178,11 @@ class DailyNutritionFacts extends StatelessWidget {
         ),
         // Macros
         Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-        MacroBreakdown(),
+        MacroBreakdown(
+          carbs: appState.currentDay.getCarbs(),
+          fat: appState.currentDay.getFat(),
+          protein: appState.currentDay.getProtein(),
+        ),
         // TODO - do a possible mean breakdown that shows what percentage each meal contributes to goals
         // Meal Breakdowns
         // Text('Meal Breakdowns', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
