@@ -103,6 +103,17 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void changeDefaultMealName(String mealName, String defaultMeal) {
+    // Change the name of the default meal
+    if (defaultData.meals.contains(defaultMeal)) {
+      int index = defaultData.meals.indexOf(defaultMeal);
+      defaultData.meals[index] = mealName;
+    } else {
+      // If the default meal is not found, add it
+      defaultData.meals.add(mealName);
+    }
+    notifyListeners();
+  }
 }
 
 class HomePage extends StatefulWidget {
@@ -1754,19 +1765,30 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
   }
 }
 
+// TODO - finish implentation of the DefaultMealsMenu with creating new days on start up
 class DefaultMealsMenu extends StatelessWidget {
   const DefaultMealsMenu({super.key});
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Scaffold
     (
-      // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Default Meals'),),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
         spacing: 15,
         children: [
+          // A note that this will only change the default meals for future days
+          SizedBox(
+            width: 320,
+            child: Text(
+              'Note: Changing the default meals will only change the meals for future days, not today or past days.',
+              style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
+            ),
+          ),
           SizedBox(height: 0,),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1797,9 +1819,45 @@ class DefaultMealsMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        // TODO - default to already existing value
-                        hintText: '3',
+                        hintText: appState.defaultData.meals.isEmpty ? '3' : appState.defaultData.meals.length.toString(),
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) {
+                        // If the value is not empty, parse it to an int
+                        int temp = 0;
+                        if (value.isNotEmpty) {
+                          temp = int.tryParse(value) ?? 0;
+                        }
+
+                        if (temp != 0)
+                        {
+                          if (temp > appState.defaultData.meals.length)
+                          {
+                            for (int i = appState.defaultData.meals.length; i < temp; i++)
+                            {
+                              // Add a new meal to the list
+                              appState.defaultData.meals.add('Meal ${i + 1}');
+                            }
+                          }
+                          else if (temp < appState.defaultData.meals.length)
+                          {
+                            // Remove meals from the list
+                            appState.defaultData.meals.removeRange(temp, appState.defaultData.meals.length);
+                          }
+                          else
+                          {
+                            // Do nothing if the value is the same
+                            return;
+                          }
+                        }
+                        else
+                        {
+                          // If the value is 0, clear the list
+                          appState.defaultData.meals.clear();
+                        }
+                      },
                     ),
                   ),
                 ]
@@ -1807,7 +1865,6 @@ class DefaultMealsMenu extends StatelessWidget {
             ]
           ),
           Text('Meal Data', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
-          // TODO - change this to list the number of meals that exist
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -1819,9 +1876,8 @@ class DefaultMealsMenu extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('Meal Name', style: TextStyle(fontSize: 17)),
-                  Text('Meal Name', style: TextStyle(fontSize: 17)),
-                  Text('Meal Name', style: TextStyle(fontSize: 17)),
+                  for (var mealName in appState.defaultData.meals)
+                    Text('Meal Name', style: TextStyle(fontSize: 17)),
                 ],
               ),
               // spacer
@@ -1833,37 +1889,21 @@ class DefaultMealsMenu extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   // Daily Meals
-                  SizedBox(
-                    width: 175,
-                    height: 50,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        // TODO - default to already existing value
-                        hintText: 'Meal 1',
+                  for (var mealName in appState.defaultData.meals)
+                    SizedBox(
+                      width: 175,
+                      height: 50,
+                      child: TextField(
+                        decoration: InputDecoration(
+                          border: OutlineInputBorder(),
+                          hintText: mealName,
+                        ),
+                        onChanged: (value) {
+                          // Update the meal name in the list
+                          appState.changeDefaultMealName(value, mealName);
+                        },
                       ),
                     ),
-                  ),SizedBox(
-                    width: 175,
-                    height: 50,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        // TODO - default to already existing value
-                        hintText: 'Meal 2',
-                      ),
-                    ),
-                  ),SizedBox(
-                    width: 175,
-                    height: 50,
-                    child: TextField(
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                        // TODO - default to already existing value
-                        hintText: 'Meal 3',
-                      ),
-                    ),
-                  ),
                 ]
               )
             ]
