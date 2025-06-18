@@ -562,6 +562,16 @@ class EditMealMenu extends StatelessWidget {
           ),
           // Options
           Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          // Note that this changing the meal name will only change the name of the meal in the current day's meals
+          SizedBox(
+            width: 350,
+            height: 50,
+            child: Text(
+              'Note: Changing the meal name will only change the name of the meal in the current day\'s meals.',
+              style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic),
+              textAlign: TextAlign.center,
+            ),
+          ),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
@@ -602,19 +612,19 @@ class EditMealMenu extends StatelessWidget {
           ),
           // Spacer
           SizedBox(height: 75,),
-          // Save Button
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
-              ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
-            onPressed: () => {
-              // TODO - save button
-              print('finish save button for edit meal')
-            },
-          ),
+          // // Save Button
+          // ElevatedButton(
+          //   style: ElevatedButton.styleFrom(
+          //     fixedSize: const Size(250, 50),
+          //     foregroundColor: Colors.blueAccent, // text color
+          //     side: BorderSide(width: 3, color: Colors.blueAccent)
+          //     ),
+          //   child: Text('Save', style: TextStyle(fontSize: 20)),
+          //   onPressed: () => {
+          //     // TODO - save button
+          //     print('finish save button for edit meal')
+          //   },
+          // ),
           // Remove button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -774,7 +784,6 @@ class _AddNewMealState extends State<AddNewMeal> {
                         border: OutlineInputBorder(),
                         hintText: newMeal.mealName, // default meal name
                       ),
-
                     ),
                   ),
                   SizedBox(
@@ -814,7 +823,7 @@ class _AddNewMealState extends State<AddNewMeal> {
               foregroundColor: Colors.blueAccent, // text color
               side: BorderSide(width: 3, color: Colors.blueAccent)
               ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
+            child: Text('Add Meal', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // Add the new meal to the current day's meals
               appState.addMeal(newMeal, toDefault: isDefaultMeal),
@@ -845,7 +854,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
     return Scaffold
     (
       appBar: AppBar(
-        title: Text('${appState.currentlySelectedFood.foodData.name} Nutrition Facts'),
+        title: Text('Nutrition Facts'),
         ),
 
       body: Column(
@@ -936,6 +945,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           // Spacer
           SizedBox(height: 75,),
           // Save Button
+          if (context.read<MyAppState>().isAddFoodMenuOpen)
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
@@ -943,7 +953,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
               side: BorderSide(width: 3, color: Colors.blueAccent)
               ),
             child: Text(
-              context.read<MyAppState>().isAddFoodMenuOpen ? 'Add Food to Meal' : 'Save',
+              'Add Food to Meal',
               style: TextStyle(fontSize: 20),
             ),
             onPressed: () {
@@ -952,17 +962,11 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
                 appState.addNewFoodToMeal(appState.currentlySelectedMeal, appState.currentlySelectedFood);
                 Navigator.of(context).pop(); // Close the nutrition facts page
               } 
-              else
-              {
-                // TODO - save button for adjusting the inputted serving size and meal
-                print('finish save button for adjusting the inputted serving size and meal');
-                Navigator.of(context).pop(); // Close the nutrition facts page
-              }
             },
           ),
-            // Remove button
-            // Only show if not coming from AddFoodMenu (i.e., currentlySelectedMeal is not empty)
-            if (!context.read<MyAppState>().isAddFoodMenuOpen)
+          // Remove button
+          // Only show if not coming from AddFoodMenu (i.e., currentlySelectedMeal is not empty)
+          if (!context.read<MyAppState>().isAddFoodMenuOpen)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
