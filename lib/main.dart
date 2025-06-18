@@ -88,6 +88,21 @@ class MyAppState extends ChangeNotifier {
     currentlySelectedMeal.mealName = newName;
     notifyListeners();
   }
+
+  void removeMealFromDay(Meal meal) {
+    // Remove the meal from the current day's meals
+    currentDay.meals.remove(meal);
+    notifyListeners();
+  }
+
+  void removeMealFromFutureDays(Meal meal) {
+    // Remove the meal from future days
+    defaultData.meals.removeWhere((m) => m == meal.mealName);
+    // Also remove it from the current day's meals
+    currentDay.meals.remove(meal);
+    notifyListeners();
+  }
+
 }
 
 class HomePage extends StatefulWidget {
@@ -646,6 +661,8 @@ class TypeOfMealDeletion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return SizedBox(
       width: 300,
       height: 200,
@@ -664,16 +681,22 @@ class TypeOfMealDeletion extends StatelessWidget {
           TextButton(
             child: Text('Today Only'),
             onPressed:() {
-              // TODO - remove the meal just for today
-              Navigator.pop(context, 'Today Only');
+              appState.removeMealFromDay(appState.currentlySelectedMeal);
+              print(appState.currentDay.meals);
+              print(appState.defaultData.meals);
+              // pop all the way back to the home page
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
           // Remove from daily meals
           TextButton(
             child: Text('Future Days'),
             onPressed:() {
-              // TODO - remove from daily meals
-              Navigator.pop(context, 'From Future Days');
+              appState.removeMealFromFutureDays(appState.currentlySelectedMeal);
+              print(appState.currentDay.meals);
+              print(appState.defaultData.meals);
+              // pop all the way back to the home page
+              Navigator.of(context).popUntil((route) => route.isFirst);
             },
           ),
         ],
