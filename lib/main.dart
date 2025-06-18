@@ -37,8 +37,10 @@ class MyAppState extends ChangeNotifier {
   // current day data
   late DayData currentDay;
 
+  Food currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
+  Meal currentlySelectedMeal = Meal();
 
-  FoodData currentlySelectedFood = FoodData();
+  bool isAddFoodMenuOpen = false;
 
   // constructor
   MyAppState() {
@@ -47,6 +49,37 @@ class MyAppState extends ChangeNotifier {
 
   void addFoodToDatabase(FoodData food) {
     foods.add(food);
+    notifyListeners();
+  }
+
+  void addNewFoodToMeal(Meal meal, Food food) {
+    // Add the food to the currently selected meal
+    meal.addNewFood(food);
+    // Reset the currently selected food
+
+
+    notifyListeners();
+  }
+
+  void removeFoodFromMeal(Meal meal, Food food) {
+    // Remove the food from the currently selected meal
+    meal.foods.remove(food);
+    // Reset the currently selected food
+    currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
+    // Reset the currently selected meal
+    currentlySelectedMeal = Meal();
+
+    notifyListeners();
+  }
+
+  void servingSizeChanged(double newServing) {
+    // Update the serving size of the currently selected food
+    currentlySelectedFood.serving = newServing;
+    notifyListeners();
+  }
+
+  void setCurrentlySelectedMeal(Meal meal) {
+    currentlySelectedMeal = meal;
     notifyListeners();
   }
 }
@@ -83,7 +116,8 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('September 22, 2025', textAlign: TextAlign.center,),
+        // set the title to today's date
+        title: Text('${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}', textAlign: TextAlign.center,),
         backgroundColor: Colors.blueGrey
         ),
       bottomNavigationBar: BottomNavigationBar(
@@ -164,7 +198,7 @@ class MealsPage extends StatelessWidget {
               ),
               Text(
                 // TODO - this needs to calculate the calories used from the meals
-              '0',
+              '${appState.currentDay.getCalories()}',
               style: TextStyle(fontSize: 30),
               ),
             ]
@@ -191,7 +225,7 @@ class MealsPage extends StatelessWidget {
               ),
               Text(
                 // TODO - this needs to calculate the calories left from the meals
-              '${appState.defaultData.dailyCalories - 0}',
+              '${appState.defaultData.dailyCalories - appState.currentDay.getCalories()}',
               style: TextStyle(fontSize: 30),
               ),
             ]
@@ -231,8 +265,8 @@ class MealsPage extends StatelessWidget {
 
 class MealBox extends StatefulWidget {
   // Make meal accessible from the state class
-  final MealData meal;
-  MealData get mealData => meal;
+  final Meal meal;
+  Meal get mealData => meal;
 
   const MealBox({super.key, required this.meal});
 
@@ -270,7 +304,7 @@ class _MealBoxState extends State<MealBox> {
                         Icon(Icons.edit, color: const Color.fromARGB(255, 87, 87, 87),),
                       ],
                     ),
-                    // TODO - calories needs to calculate this based on the food in the meal
+                    // sets the calories for the meal
                     Text(
                       '${widget.meal.getCalories()}',
                       style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.right
@@ -296,13 +330,15 @@ class _MealBoxState extends State<MealBox> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                  Text(food.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                  Text('${food.calories}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                  Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                  Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
                   ],
                 ),
                 onTap: () {
-                  // Optionally set the selected food in app state if needed
-                  // context.read<MyAppState>().currentlySelectedFood = food;
+                  // Set the selected food in app state if needed
+                  context.read<MyAppState>().currentlySelectedFood = food;
+                  // Set the currently selected meal in app state
+                  context.read<MyAppState>().currentlySelectedMeal = widget.meal;
                   Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                 }
                 ),
@@ -313,6 +349,8 @@ class _MealBoxState extends State<MealBox> {
             ElevatedButton(
               child: Icon(Icons.add_box),
               onPressed: () {
+                // Set the currently selected meal in app state
+                context.read<MyAppState>().currentlySelectedMeal = widget.meal;
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddFoodMenu()));
               }
             ),
@@ -330,11 +368,28 @@ class AddFoodMenu extends StatefulWidget {
   State<AddFoodMenu> createState() => _AddFoodMenuState();
 }
 
-class _AddFoodMenuState extends State<AddFoodMenu> {
+class _AddFoodMenuState extends State<AddFoodMenu>{
+  // set isAddFoodMenuOpen to true while the menu is opened
+  @override
+  void initState() {
+    super.initState();
+    // Set isAddFoodMenuOpen to true when the menu is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MyAppState>().isAddFoodMenuOpen = true;
+    });
+  }
+
+  @override
+  void deactivate() {
+    // Set isAddFoodMenuOpen to false when the menu is closed
+    // This is safe because deactivate is called before dispose and context is still valid
+    context.read<MyAppState>().isAddFoodMenuOpen = false;
+    super.deactivate();
+  }
+
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-
 
     return DefaultTabController(
       length: 2,
@@ -401,7 +456,7 @@ class _AddFoodMenuState extends State<AddFoodMenu> {
                             ),
                           onTap: () {
                             // open Nutrition facts
-                            appState.currentlySelectedFood = appState.foods[index];
+                            appState.currentlySelectedFood = Food(foodData: appState.foods[index], serving: 1);
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                           },
                         ),
@@ -704,7 +759,7 @@ class FoodNutritionFacts extends StatefulWidget {
   State<FoodNutritionFacts> createState() => _FoodNutritionFactsState();
 }
 
-// TODO - this only works from the add food menu and saved foods and not from the meals page
+// TODO - the Food that is currently selected's serving size changes even when the save button is NOT pressed
 class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
   @override
   Widget build(BuildContext context) {
@@ -712,15 +767,14 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
 
     return Scaffold
     (
-      // TODO - change name to show the name of the food, meal, or day
       appBar: AppBar(
-        title: Text('Nutrition Facts'),
+        title: Text('${appState.currentlySelectedFood.foodData.name} Nutrition Facts'),
         ),
 
       body: Column(
         spacing: 15,
         children: [
-          Text('${appState.currentlySelectedFood.name}', style: TextStyle(fontSize: 25),),
+          Text(appState.currentlySelectedFood.foodData.name, style: TextStyle(fontSize: 25),),
           // Calories
           SizedBox(
             width: 350,
@@ -728,7 +782,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text('Calories', style: TextStyle(fontSize: 25),),
-                Text('${appState.currentlySelectedFood.calories}', style: TextStyle(fontSize: 25),),
+                Text('${appState.currentlySelectedFood.foodData.calories * appState.currentlySelectedFood.serving}', style: TextStyle(fontSize: 25),),
               ]
             ),
           ),
@@ -758,33 +812,39 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  SizedBox(
+                    SizedBox(
                     width: 150,
                     height: 50,
                     child: TextField(
+                      // restrict the input to numbers only
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        // TODO - default hint text to the selected serving size
-                        hintText: 'Decimal Size',
+                        hintText: appState.currentlySelectedFood.serving.toString().replaceAll('.0', ''), // show the current serving size
                       ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),],
+                        onChanged: (value) {
+                          // Update the serving size in the app state as the user types
+                          appState.servingSizeChanged(double.tryParse(value) ?? 1);
+                        }
                     ),
                   ),
                   SizedBox(
                     width: 150,
                     height: 50,
                     child: DropdownButton<String>(
-                        hint: Text('Select Meal'),
-                        // TODO - implement multiple meals based on the day's meal and clean this up
-                        items: <String>['Meal 1', 'Meal 2', 'Meal 3', 'Meal 4'].map((String value) {
+                        hint: appState.currentlySelectedMeal.mealName.isEmpty ? Text('Select Meal') : Text(appState.currentlySelectedMeal.mealName),
+                        items: appState.currentDay.meals.map((meal) {
                           return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
+                            value: meal.mealName,
+                            child: Text(meal.mealName),
                           );
                         }).toList(),
-                        
-                        // TODO - add the state for the selected meal
                         onChanged:(String? newValue) {
-                          // selectedValue = newValue;
+                          // set the currently selected meal in app state
+                          appState.setCurrentlySelectedMeal(
+                            appState.currentDay.meals.firstWhere((meal) => meal.mealName == newValue, orElse: () => Meal())
+                          );
                         },
                       ),
                   )
@@ -801,26 +861,40 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
               foregroundColor: Colors.blueAccent, // text color
               side: BorderSide(width: 3, color: Colors.blueAccent)
               ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
-            onPressed: () => {
-              // TODO - save button
-              // TODO - saved food menu and home screen should show Save but add food menu should show add
-              print('finish save button for nutrition facts')
+            child: Text(
+              context.read<MyAppState>().isAddFoodMenuOpen ? 'Add Food to Meal' : 'Save',
+              style: TextStyle(fontSize: 20),
+            ),
+            onPressed: () {
+              // if the user is coming from the AddFoodMenu, add the food to the meal
+              if (context.read<MyAppState>().isAddFoodMenuOpen) {
+                appState.addNewFoodToMeal(appState.currentlySelectedMeal, appState.currentlySelectedFood);
+                Navigator.of(context).pop(); // Close the nutrition facts page
+              } 
+              else
+              {
+                // TODO - save button for adjusting the inputted serving size and meal
+                print('finish save button for adjusting the inputted serving size and meal');
+                Navigator.of(context).pop(); // Close the nutrition facts page
+              }
             },
           ),
-          // Remove button
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
+            // Remove button
+            // Only show if not coming from AddFoodMenu (i.e., currentlySelectedMeal is not empty)
+            if (!context.read<MyAppState>().isAddFoodMenuOpen)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
               foregroundColor: Colors.red, // text color
               side: BorderSide(width: 3, color: Colors.red)
               ),
-            child: Text('Remove Food', style: TextStyle(fontSize: 20)),
-            onPressed: () => {
-              // TODO - remove meal / remove food from meal
-              print('finish remove button on the nutrition facts')
-            },
-          )
+              child: Text('Remove Food', style: TextStyle(fontSize: 20)),
+              onPressed: () {
+                // remove the food from the meal
+                appState.removeFoodFromMeal(appState.currentlySelectedMeal, appState.currentlySelectedFood);
+                Navigator.of(context).pop(); // Close the nutrition facts page
+              },
+            ),
         ],
       ),
     );
@@ -872,7 +946,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: appState.currentlySelectedFood.carbs / appState.defaultData.dailyCarbs,
+                value: appState.currentlySelectedFood.foodData.carbs * appState.currentlySelectedFood.serving / appState.defaultData.dailyCarbs,
                 backgroundColor: const Color.fromARGB(88, 0, 197, 99),
                 color: Color.fromARGB(255, 0, 197, 99),
               ),
@@ -882,7 +956,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: appState.currentlySelectedFood.fat / appState.defaultData.dailyFat,
+                value: appState.currentlySelectedFood.foodData.fat  * appState.currentlySelectedFood.serving / appState.defaultData.dailyFat,
                 backgroundColor: const Color.fromARGB(88, 255, 172, 64),
                 color: Colors.orangeAccent,
               ),
@@ -892,7 +966,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: appState.currentlySelectedFood.protein / appState.defaultData.dailyProtein,
+                value: appState.currentlySelectedFood.foodData.protein  * appState.currentlySelectedFood.serving / appState.defaultData.dailyProtein,
                 backgroundColor: const Color.fromARGB(88, 255, 82, 82),
                 color: Colors.redAccent,
               ),
@@ -906,11 +980,11 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
           spacing: 7,
           children: [
             // Carbs
-            Text('${appState.currentlySelectedFood.carbs} / ${appState.defaultData.dailyCarbs}', style: TextStyle(fontSize: 17)),
+            Text('${appState.currentlySelectedFood.foodData.carbs * appState.currentlySelectedFood.serving} / ${appState.defaultData.dailyCarbs}', style: TextStyle(fontSize: 17)),
             // Fat
-            Text('${appState.currentlySelectedFood.fat} / ${appState.defaultData.dailyFat}', style: TextStyle(fontSize: 17)),
+            Text('${appState.currentlySelectedFood.foodData.fat * appState.currentlySelectedFood.serving} / ${appState.defaultData.dailyFat}', style: TextStyle(fontSize: 17)),
             // Protein
-            Text('${appState.currentlySelectedFood.protein} / ${appState.defaultData.dailyProtein}', style: TextStyle(fontSize: 17)),
+            Text('${appState.currentlySelectedFood.foodData.protein * appState.currentlySelectedFood.serving} / ${appState.defaultData.dailyProtein}', style: TextStyle(fontSize: 17)),
           ],
     
         ),
@@ -1760,6 +1834,7 @@ class SavedFoodsMenu extends StatefulWidget {
   State<SavedFoodsMenu> createState() => _SavedFoodsMenuState();
 }
 
+// TODO - saved foods needs to go to a different UI so foods can be edited
 class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
   // TODO - figure out a way to make this work more seemlessly with the add food menu
 
@@ -1831,7 +1906,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                             ),
                           onTap: () {
                             // open Nutrition facts
-                            appState.currentlySelectedFood = appState.foods[index];
+                            appState.currentlySelectedFood = Food(foodData: appState.foods[index]);
                             Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                           },
                         ),
@@ -1989,49 +2064,49 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
               )
             ],
           ),
-          Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(
-                spacing: 33,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('Add to Meal?', style: TextStyle(fontSize: 17)),
-                ],
-              ),
-              // spacer
-              SizedBox(width: 50,),
-              // Input fields
-              Column(
-                spacing: 7,
-                mainAxisAlignment: MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                SizedBox(
-                  width: 175,
-                  height: 50,
-                  child: DropdownButton<String>(
-                    // TODO - default the value to be no
-                    hint: Text('Select a Meal'),
-                    // TODO - Change this to show the meals that are available
-                    items: <String>['No', 'Meal 1', 'Meal 2', 'Meal 3'].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    // TODO - finish the changes
-                    onChanged:(String? newValue) {
-                      // selectedValue = newValue
-                    },
-                  ),
-                ),
-                ],
-              ),
-            ],
-          ),
+          // Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     Column(
+          //       spacing: 33,
+          //       mainAxisAlignment: MainAxisAlignment.start,
+          //       crossAxisAlignment: CrossAxisAlignment.end,
+          //       children: [
+          //         Text('Add to Meal?', style: TextStyle(fontSize: 17)),
+          //       ],
+          //     ),
+          //     // spacer
+          //     SizedBox(width: 50,),
+          //     // Input fields
+          //     Column(
+          //       spacing: 7,
+          //       mainAxisAlignment: MainAxisAlignment.start,
+          //       crossAxisAlignment: CrossAxisAlignment.end,
+          //       children: [
+          //       SizedBox(
+          //         width: 175,
+          //         height: 50,
+          //         child: DropdownButton<String>(
+          //           // TODO - default the value to be no
+          //           hint: Text('Select a Meal'),
+          //           // TODO - Change this to show the meals that are available
+          //           items: <String>['No', 'Meal 1', 'Meal 2', 'Meal 3'].map((String value) {
+          //             return DropdownMenuItem<String>(
+          //               value: value,
+          //               child: Text(value),
+          //             );
+          //           }).toList(),
+          //           // TODO - finish the changes
+          //           onChanged:(String? newValue) {
+          //             // selectedValue = newValue
+          //           },
+          //         ),
+          //       ),
+          //       ],
+          //     ),
+          //   ],
+          // ),
           // Spacer
           SizedBox(height: 75,),
           // Save Button
@@ -2074,12 +2149,12 @@ class DayData {
   int maxFat = 67;
   int maxCarbs = 316;
 
-  List<MealData> meals = [];
+  List<Meal> meals = [];
 
   DayData(DefaultData defaultData) {
     // Initialize meals with default meal names
     for (var mealName in defaultData.meals) {
-      meals.add(MealData()..mealName = mealName);
+      meals.add(Meal()..mealName = mealName);
     }
 
     // Set default max values
@@ -2121,19 +2196,21 @@ class DayData {
     return carbs;
   }
 
-  void addNewMeal(MealData meal) {
+  void addNewMeal(Meal meal) {
     meals.add(meal);
   }
 }
 
-class MealData {
+class Meal {
   String mealName = "Meal";
-  List<FoodData> foods = []; 
+  List<Food> foods = []; 
+
+  Meal({this.mealName = "Meal"});
 
   int getCalories () {
     int calories = 0;
     for (var food in foods) {
-      calories += food.calories;
+      calories += (food.foodData.calories * food.serving).ceil();
     }
     return calories;
   }
@@ -2141,7 +2218,7 @@ class MealData {
   int getProtein () {
     int protein = 0;
     for (var food in foods) {
-      protein += food.protein;
+      protein += (food.foodData.protein * food.serving).ceil();
     }
     return protein;
   }
@@ -2149,7 +2226,7 @@ class MealData {
   int getFat () {
     int fat = 0;
     for (var food in foods) {
-      fat += food.fat;
+      fat += (food.foodData.fat * food.serving).ceil();
     }
     return fat;
   }
@@ -2157,24 +2234,63 @@ class MealData {
   int getCarbs () {
     int carbs = 0;
     for (var food in foods) {
-      carbs += food.carbs;
+      carbs += (food.foodData.carbs * food.serving).ceil();
     }
     return carbs;
   }
 
-  void addNewFood(FoodData food) {
+  void addNewFood(Food food) {
+    // Check if the food already exists in the meal
     foods.add(food);
+  }
+}
 
-    // TODO - notify listeners
+class Food {
+  FoodData foodData;
+  double serving;
+
+  Food({required this.foodData, this.serving = 1.0});
+
+  // Method to get the total calories for the food based on the serving size
+  int getCalories() {
+    return (foodData.calories * serving).ceil();
+  }
+
+  // Method to get the total protein for the food based on the serving size
+  int getProtein() {
+    return (foodData.protein * serving).ceil();
+  }
+
+  // Method to get the total fat for the food based on the serving size
+  int getFat() {
+    return (foodData.fat * serving).ceil();
+  }
+
+  // Method to get the total carbs for the food based on the serving size
+  int getCarbs() {
+    return (foodData.carbs * serving).ceil();
+  }
+
+  // Method to get the total serving size
+  double getServing() {
+    return serving;
   }
 }
 
 class FoodData {
-  String name ="Unnamed Food";
-  int calories = 0;
-  int protein = 0;
-  int fat = 0;
-  int carbs = 0;
+  String name;
+  int calories;
+  int protein;
+  int fat;
+  int carbs;
+
+  FoodData({
+    this.name = "Unnamed Food",
+    this.calories = 0,
+    this.protein = 0,
+    this.fat = 0,
+    this.carbs = 0
+  });
 }
 
 class WeightList {
