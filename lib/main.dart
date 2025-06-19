@@ -5,6 +5,7 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
 
 void main() {
+  // TODO - create the current date and time if it is not already set
   runApp(const MyApp());
 }
 
@@ -28,6 +29,9 @@ class MyApp extends StatelessWidget {
 
 // Current state of the app
 class MyAppState extends ChangeNotifier {
+  // List of all the days
+  List<DayData> days = [];
+
   // contains all the foods in the database
   List<FoodData> foods = [];
 
@@ -49,6 +53,25 @@ class MyAppState extends ChangeNotifier {
   // constructor
   MyAppState() {
     currentDay = DayData(defaultData);
+    days.add(currentDay);
+  }
+
+  // change the current day to a specific date
+  void changeCurrentDay(DateTime newDate) {
+    // check if the date already exists in the days list
+    for (var day in days) {
+      if (day.date.year == newDate.year && day.date.month == newDate.month && day.date.day == newDate.day) {
+        currentDay = day;
+        notifyListeners();
+        return;
+      }
+    }
+
+    // if the date does not exist, create a new day
+    currentDay = DayData(defaultData, date: newDate);
+    currentDay.date = newDate;
+    days.add(currentDay);
+    notifyListeners();
   }
 
   void addFoodToDatabase(FoodData food) {
@@ -142,6 +165,14 @@ class MyAppState extends ChangeNotifier {
     defaultData.dailyCarbs = carbs;
     defaultData.dailyFat = fat;
     defaultData.dailyProtein = protein;
+
+    // Update the current day's goals as well
+    currentDay.maxCalories = calories;
+    currentDay.maxCarbs = carbs;
+    currentDay.maxFat = fat;
+    currentDay.maxProtein = protein;
+
+    // Notify listeners to update the UI
     notifyListeners();
   }
 
@@ -194,12 +225,34 @@ class _HomePageState extends State<HomePage> {
         throw UnimplementedError('no widget for $selectedPageIndex');
     }
 
+    var appState = context.watch<MyAppState>();
+
     return Scaffold(
       appBar: AppBar(
         // set the title to today's date
-        title: Text('${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}', textAlign: TextAlign.center,),
-        backgroundColor: Colors.blueGrey
+        title: SizedBox(
+          width: 180,
+          child: DropdownButton<DateTime>(
+            isExpanded: true,
+            value: DateTime(appState.currentDay.date.year, appState.currentDay.date.month, appState.currentDay.date.day),
+            items: List.generate(365, (index) {
+              final date = DateTime.now().subtract(Duration(days: 182)).add(Duration(days: index));
+              return DropdownMenuItem<DateTime>(
+                value: DateTime(date.year, date.month, date.day),
+                child: Text(DateFormat('MM/dd/yyyy').format(date)),
+              );
+            }),
+            onChanged: (value) {
+              if (value != null) {
+                appState.changeCurrentDay(value);
+                // update the page to reflect the new current day
+                setState(() {});
+              }
+            },
+          ),
         ),
+        backgroundColor: Colors.blueGrey
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem> [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
@@ -216,9 +269,9 @@ class _HomePageState extends State<HomePage> {
         selectedItemColor: Colors.amber[800],
       ),
     
-    body: page,
+      body: page,
 
-    resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: false,
     );
   }
 }
@@ -250,7 +303,7 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
-              '${appState.defaultData.dailyCalories}',
+              '${appState.currentDay.maxCalories}',
               style: TextStyle(fontSize: 30),
               ),
             ]
@@ -302,7 +355,7 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
-              '${appState.defaultData.dailyCalories - appState.currentDay.getCalories()}',
+              '${appState.currentDay.maxCalories - appState.currentDay.getCalories()}',
               style: TextStyle(fontSize: 30),
               ),
             ]
@@ -1077,7 +1130,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: carbs / appState.defaultData.dailyCarbs,
+                value: carbs / appState.currentDay.maxCarbs,
                 backgroundColor: const Color.fromARGB(88, 0, 197, 99),
                 color: Color.fromARGB(255, 0, 197, 99),
               ),
@@ -1087,7 +1140,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: fat / appState.defaultData.dailyFat,
+                value: fat / appState.currentDay.maxFat,
                 backgroundColor: const Color.fromARGB(88, 255, 172, 64),
                 color: Colors.orangeAccent,
               ),
@@ -1097,7 +1150,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
               width: 240,
               child: LinearProgressIndicator(
                 // current / max
-                value: protein / appState.defaultData.dailyProtein,
+                value: protein / appState.currentDay.maxProtein,
                 backgroundColor: const Color.fromARGB(88, 255, 82, 82),
                 color: Colors.redAccent,
               ),
@@ -1111,11 +1164,11 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
           spacing: 7,
           children: [
             // Carbs
-            Text('${carbs} / ${appState.defaultData.dailyCarbs}', style: TextStyle(fontSize: 17)),
+            Text('${carbs} / ${appState.currentDay.maxCarbs}', style: TextStyle(fontSize: 17)),
             // Fat
-            Text('${fat} / ${appState.defaultData.dailyFat}', style: TextStyle(fontSize: 17)),
+            Text('${fat} / ${appState.currentDay.maxFat}', style: TextStyle(fontSize: 17)),
             // Protein
-            Text('${protein } / ${appState.defaultData.dailyProtein}', style: TextStyle(fontSize: 17)),
+            Text('${protein } / ${appState.currentDay.maxProtein}', style: TextStyle(fontSize: 17)),
           ],
     
         ),
@@ -1960,10 +2013,7 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // Update the default data with the new goals
-              appState.defaultData.dailyCalories = maxCalories,
-              appState.defaultData.dailyCarbs = maxCarbs,
-              appState.defaultData.dailyFat = maxFat,
-              appState.defaultData.dailyProtein = maxProtein,
+              appState.setCalorieAndMacroGoals(maxCalories, maxCarbs, maxFat, maxProtein),
               // Pop back to the settings menu
               Navigator.of(context).pop(),
             },
@@ -2606,7 +2656,7 @@ class DayData {
 
   List<Meal> meals = [];
 
-  DayData(DefaultData defaultData) {
+  DayData(DefaultData defaultData, {DateTime? date}) {
     // Initialize meals with default meal names
     for (var mealName in defaultData.meals) {
       meals.add(Meal()..mealName = mealName);
