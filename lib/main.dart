@@ -239,7 +239,6 @@ class MealsPage extends StatelessWidget {
         SizedBox(height: 0,),
         // Calories Header
         InkWell(
-          // TODO - Possibly change this to a bar instead of numbers
           child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -277,7 +276,6 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
-                // TODO - this needs to calculate the calories used from the meals
               '${appState.currentDay.getCalories()}',
               style: TextStyle(fontSize: 30),
               ),
@@ -304,7 +302,6 @@ class MealsPage extends StatelessWidget {
               style: TextStyle(fontSize: 15),
               ),
               Text(
-                // TODO - this needs to calculate the calories left from the meals
               '${appState.defaultData.dailyCalories - appState.currentDay.getCalories()}',
               style: TextStyle(fontSize: 30),
               ),
@@ -478,8 +475,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
       child: Scaffold
       (
         appBar: AppBar(
-          // TODO - change the 'meal' to show what meal the food would be added to
-          title: Text('Add New Food to Meal'),
+          title: Text('Add New Food to ${appState.currentlySelectedMeal.mealName.isEmpty ? 'Meal' : appState.currentlySelectedMeal.mealName}'),
           // search or scan tabs selection
           bottom: TabBar(
             tabs: [
@@ -504,7 +500,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                   child: TextField(
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      // TODO - change the hint text to default to the meal name
+                      // TODO - Finish search bar
                       hintText: 'Search',
                     ),
                   ),
@@ -662,7 +658,6 @@ class EditMealMenu extends StatelessWidget {
           //     ),
           //   child: Text('Save', style: TextStyle(fontSize: 20)),
           //   onPressed: () => {
-          //     // TODO - save button
           //     print('finish save button for edit meal')
           //   },
           // ),
@@ -1224,7 +1219,6 @@ class DailyNutritionMenu extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold
     (
-      // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Today\'s Nutrition Facts'),),
       body: DailyNutritionFacts()
     );
@@ -1641,7 +1635,6 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
           //     ),
           //   child: Text('Save', style: TextStyle(fontSize: 20)),
           //   onPressed: () => {
-          //     // TODO - save button
           //     print('finish save button for edit weight')
           //   },
           // ),
@@ -2135,7 +2128,6 @@ class DefaultMealsMenu extends StatelessWidget {
           //     ),
           //   child: Text('Save', style: TextStyle(fontSize: 20)),
           //   onPressed: () => {
-          //     // TODO - save button
           //     print('finish save button for default meals')
           //   },
           // ),
@@ -2186,7 +2178,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                   child: TextField(
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
-                      // TODO - change the hint text to default to the meal name
+                      // TODO - finish the search bar
                       hintText: 'Search',
                     ),
                   ),
@@ -2402,16 +2394,13 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
           //         width: 175,
           //         height: 50,
           //         child: DropdownButton<String>(
-          //           // TODO - default the value to be no
           //           hint: Text('Select a Meal'),
-          //           // TODO - Change this to show the meals that are available
           //           items: <String>['No', 'Meal 1', 'Meal 2', 'Meal 3'].map((String value) {
           //             return DropdownMenuItem<String>(
           //               value: value,
           //               child: Text(value),
           //             );
           //           }).toList(),
-          //           // TODO - finish the changes
           //           onChanged:(String? newValue) {
           //             // selectedValue = newValue
           //           },
