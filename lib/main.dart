@@ -136,6 +136,21 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setCalorieAndMacroGoals(int calories, int carbs, int fat, int protein) {
+    // Set the daily calorie and macro goals in default data
+    defaultData.dailyCalories = calories;
+    defaultData.dailyCarbs = carbs;
+    defaultData.dailyFat = fat;
+    defaultData.dailyProtein = protein;
+    notifyListeners();
+  }
+
+  void updateCurrentlySelectedFoodData(FoodData foodData) {
+    // Update the currently selected food's data
+    currentlySelectedFood.foodData = foodData;
+    notifyListeners();
+  }
+
   void changeDefaultMealName(String mealName, String defaultMeal) {
     // Change the name of the default meal
     if (defaultData.meals.contains(defaultMeal)) {
@@ -1761,14 +1776,25 @@ class SettingsPage extends StatelessWidget {
   }
 }
 
-class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
+class CaloriesAndMacrosGoalsMenu extends StatefulWidget {
   const CaloriesAndMacrosGoalsMenu({super.key});
 
   @override
+  State<CaloriesAndMacrosGoalsMenu> createState() => _CaloriesAndMacrosGoalsMenuState();
+}
+
+class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu> {
+
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    int maxCalories = appState.defaultData.dailyCalories;
+    int maxCarbs = appState.defaultData.dailyCarbs;
+    int maxFat = appState.defaultData.dailyFat;
+    int maxProtein = appState.defaultData.dailyProtein;
+
     return Scaffold
     (
-      // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Calories and Macro Goals'),),
       body: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -1806,8 +1832,27 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'Enter Calories',
+                        hintText: maxCalories.toString(),
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) {
+                        // If the value is not empty, parse it to an int
+                        int temp = 0;
+                        if (value.isNotEmpty) {
+                          temp = int.tryParse(value) ?? 0;
+                        }
+
+                        if (temp != 0)
+                        {
+                          maxCalories = temp; // Update the max calories
+                        }
+                        else
+                        {
+                          maxCalories = 0; // Reset to 0 if empty
+                        }
+                      },
                     ),
                   ),
                   // Carbs
@@ -1817,8 +1862,27 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'Enter Carbs',
+                        hintText: maxCarbs.toString(),
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) {
+                        // If the value is not empty, parse it to an int
+                        int temp = 0;
+                        if (value.isNotEmpty) {
+                          temp = int.tryParse(value) ?? 0;
+                        }
+
+                        if (temp != 0)
+                        {
+                          maxCarbs = temp; // Update the max calories
+                        }
+                        else
+                        {
+                          maxCarbs = 0; // Reset to 0 if empty
+                        }
+                      },
                     ),
                   ),
                   // Fat
@@ -1828,8 +1892,27 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'Enter Fat',
+                        hintText: maxFat.toString(),
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) {
+                        // If the value is not empty, parse it to an int
+                        int temp = 0;
+                        if (value.isNotEmpty) {
+                          temp = int.tryParse(value) ?? 0;
+                        }
+
+                        if (temp != 0)
+                        {
+                          maxFat = temp; // Update the max calories
+                        }
+                        else
+                        {
+                          maxFat = 0; // Reset to 0 if empty
+                        }
+                      },
                     ),
                   ),
                   // Protein
@@ -1839,8 +1922,27 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'Enter Protein',
+                        hintText: maxProtein.toString(),
                       ),
+                      // Restricts the input to number only
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) {
+                        // If the value is not empty, parse it to an int
+                        int temp = 0;
+                        if (value.isNotEmpty) {
+                          temp = int.tryParse(value) ?? 0;
+                        }
+
+                        if (temp != 0)
+                        {
+                          maxProtein = temp; // Update the max calories
+                        }
+                        else
+                        {
+                          maxProtein = 0; // Reset to 0 if empty
+                        }
+                      },
                     ),
                   ),
                 ],
@@ -1864,8 +1966,13 @@ class CaloriesAndMacrosGoalsMenu extends StatelessWidget {
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
-              // TODO - save button
-              print('finish save button for calories and macros goals')
+              // Update the default data with the new goals
+              appState.defaultData.dailyCalories = maxCalories,
+              appState.defaultData.dailyCarbs = maxCarbs,
+              appState.defaultData.dailyFat = maxFat,
+              appState.defaultData.dailyProtein = maxProtein,
+              // Pop back to the settings menu
+              Navigator.of(context).pop(),
             },
           ),
         ]
@@ -2114,7 +2221,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                           onTap: () {
                             // open Nutrition facts
                             appState.currentlySelectedFood = Food(foodData: appState.foods[index]);
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditFoodMenu()));
                           },
                         ),
                       );
@@ -2131,14 +2238,12 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     ),
                   child: Text('Create New Food', style: TextStyle(fontSize: 20)),
                   onPressed: () {
-                    // TODO - saved foods needs to go to a different UI so foods can be edited
                     Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()));
-                    print('Create New Food Button Pressed');
                   },
                 ),
               ],
             ),
-            // Scan Tab
+            // TODO - Scan Tab
             Placeholder(),
           ]
         )
@@ -2348,6 +2453,158 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
   }
 }
 
+class EditFoodMenu extends StatefulWidget {
+  const EditFoodMenu({super.key});
+
+  @override
+  State<EditFoodMenu> createState() => _EditFoodMenuState();
+}
+
+class _EditFoodMenuState extends State<EditFoodMenu> {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    FoodData tempFoodData = appState.currentlySelectedFood.foodData;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Edit ${appState.currentlySelectedFood.foodData.name}'),
+        ),
+
+      body: Column(
+        spacing: 15,
+        children: [
+          Text(appState.currentlySelectedFood.foodData.name, style: TextStyle(fontSize: 25),),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.start,
+            spacing: 15,
+            children: [
+              SizedBox(height: 0,),
+              Text('Calories and Macros', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Labels for the inputs
+                  Column(
+                    spacing: 33,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text('Calories', style: TextStyle(fontSize: 17)),
+                      Text('Carbs', style: TextStyle(fontSize: 17)),
+                      Text('Fat', style: TextStyle(fontSize: 17)),
+                      Text('Protein', style: TextStyle(fontSize: 17)),
+                    ],
+                  ),
+                  // spacer
+                  SizedBox(width: 50,),
+                  // Input fields
+                  Column(
+                    spacing: 7,
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      // Calories
+                      SizedBox(
+                        width: 175,
+                        height: 50,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: tempFoodData.calories.toString(),
+                          ),
+                          // Restricts the input to number only
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          onChanged: (value) {
+                            tempFoodData.calories = int.tryParse(value) ?? 0; // Update the calories value
+                          },
+                        ),
+                      ),
+                      // Carbs
+                      SizedBox(
+                        width: 175,
+                        height: 50,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: tempFoodData.carbs.toString(),
+                          ),
+                          // Restricts the input to number only
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          onChanged: (value) {
+                            tempFoodData.carbs = int.tryParse(value) ?? 0; // Update the carbs value
+                          },
+                        ),
+                      ),
+                      // Fat
+                      SizedBox(
+                        width: 175,
+                        height: 50,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: tempFoodData.fat.toString(),
+                          ),
+                          // Restricts the input to number only
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          onChanged: (value) {
+                            tempFoodData.fat = int.tryParse(value) ?? 0; // Update the fat value
+                          },
+                        ),
+                      ),
+                      // Protein
+                      SizedBox(
+                        width: 175,
+                        height: 50,
+                        child: TextField(
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: tempFoodData.protein.toString(),
+                          ),
+                          // Restricts the input to number only
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                          onChanged: (value) {
+                            tempFoodData.protein = int.tryParse(value) ?? 0; // Update the protein value
+                          },
+                        ),
+                      ),
+                    ],
+                  )
+                ],
+              ),
+              SizedBox(height: 200,),
+              SizedBox(
+                width: 320,
+                child: Text(
+                  'Note: This will change any instance of this food in the database, including any meals that have this food.',
+                  style: TextStyle(fontSize: 15, fontStyle: FontStyle.italic),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  fixedSize: const Size(250, 50),
+                  foregroundColor: Colors.blueAccent, // text color
+                  side: BorderSide(width: 3, color: Colors.blueAccent)
+                  ),
+                child: Text('Save', style: TextStyle(fontSize: 20)),
+                onPressed: () => {
+                  // Update the default data with the new goals
+                  appState.updateCurrentlySelectedFoodData(tempFoodData),
+                  Navigator.of(context).pop(),
+                },
+              ),
+            ]
+          )
+        ],
+      ),
+    );
+  }
+}
 
 // ================================= DATA =================================
 
