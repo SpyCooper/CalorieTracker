@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:intl/intl.dart';
 
 void main() {
   runApp(const MyApp());
@@ -39,6 +39,10 @@ class MyAppState extends ChangeNotifier {
 
   Food currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
   Meal currentlySelectedMeal = Meal();
+
+  // weight list
+  List<WeightData> weightList= [];
+  WeightData currentlySelectedWeight = WeightData();
 
   bool isAddFoodMenuOpen = false;
 
@@ -106,6 +110,29 @@ class MyAppState extends ChangeNotifier {
     if (toDefault && !defaultData.meals.contains(meal.mealName)) {
       defaultData.meals.add(meal.mealName);
     }
+    notifyListeners();
+  }
+
+  void addWeight(WeightData weight) {
+    // Add a new weight entry to the weight list
+    weightList.add(weight);
+    // Sort the weight list by date
+    weightList.sort((a, b) => a.date.compareTo(b.date));
+    notifyListeners();
+  }
+
+  void updatedCurrentWeight(double weight, DateTime date) {
+    // Update the currently selected weight entry
+    currentlySelectedWeight.weight = weight;
+    currentlySelectedWeight.date = date;
+    // sort the weight list by date
+    weightList.sort((a, b) => a.date.compareTo(b.date));
+    notifyListeners();
+  }
+
+  void removeWeight(WeightData weight) {
+    // Remove a weight entry from the weight list
+    weightList.remove(weight);
     notifyListeners();
   }
 
@@ -537,7 +564,6 @@ class EditMealMenu extends StatelessWidget {
 
     return Scaffold
     (
-      // TODO - change name of the meal bar to be the meal
       appBar: AppBar(title: Text('Edit ${appState.currentlySelectedMeal.mealName}'),),
       body: Column(
         spacing: 15,
@@ -845,7 +871,6 @@ class FoodNutritionFacts extends StatefulWidget {
   State<FoodNutritionFacts> createState() => _FoodNutritionFactsState();
 }
 
-// TODO - the Food that is currently selected's serving size changes even when the save button is NOT pressed
 class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
   @override
   Widget build(BuildContext context) {
@@ -1002,7 +1027,6 @@ class MacroBreakdown extends StatefulWidget {
   State<MacroBreakdown> createState() => _MacroBreakdownState();
 }
 
-// TODO - this only works with foods right now and not meals or days
 class _MacroBreakdownState extends State<MacroBreakdown> {
 
   int get carbs => widget.carbs ?? 0;
@@ -1256,53 +1280,45 @@ class DailyNutritionFacts extends StatelessWidget {
   }
 }
 
-class WeightGraph extends StatelessWidget {
+class WeightGraph extends StatefulWidget {
   const WeightGraph({super.key});
 
   @override
+  State<WeightGraph> createState() => _WeightGraphState();
+}
+
+// TODO - the graph won't update the connections between the points until the page is refreshed but the dots will change
+class _WeightGraphState extends State<WeightGraph> {
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return SizedBox(
       width: 400,
       height: 400,
-      child: LineChart(
-        LineChartData( 
-          // disables a border around the graph
-          borderData: FlBorderData(show: false),
-          // labels
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1,
-                reservedSize: 40
-              ),
-            ),
-            topTitles: AxisTitles(), // defaults to nothing
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 5, // comment this to get the graph to auto scale
-                reservedSize: 40
-              ),
-            ),
-            rightTitles: AxisTitles(), // defaults to nothing
+      child: SfCartesianChart(
+        primaryXAxis: DateTimeAxis(
+          intervalType: DateTimeIntervalType.days,
+          dateFormat: DateFormat('MM/dd'),
+          edgeLabelPlacement: EdgeLabelPlacement.shift,
+          title: AxisTitle(text: 'Date'),
+        ),
+        primaryYAxis: NumericAxis(
+          interval: 5,
+          labelFormat: '{value}',
+          title: AxisTitle(text: 'Weight (lbs)'),
+          minimum: appState.weightList.isNotEmpty ? appState.weightList.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 5 : 0, // minimum weight
+        ),
+        tooltipBehavior: TooltipBehavior(enable: false),
+        series: <CartesianSeries>[
+          LineSeries<WeightData, DateTime>(
+            dataSource: appState.weightList,
+            xValueMapper: (WeightData data, _) => data.date,
+            yValueMapper: (WeightData data, _) => data.weight,
+            markerSettings: MarkerSettings(isVisible: true),
+            color: Colors.blue,
           ),
-          // Intervale for the grid
-          gridData: FlGridData(
-            horizontalInterval: 5,
-            verticalInterval: 1,
-          ),
-          // disables the user from touching the graph
-          lineTouchData: LineTouchData(enabled: false),
-          // Data for the graph
-          lineBarsData: [
-            LineChartBarData(
-              spots: [
-                FlSpot(0, 280), FlSpot(1, 270), FlSpot(2, 275), FlSpot(3, 260),
-              ],
-            ),
-          ],
-        ), 
+        ],
       ),
     );
   }
@@ -1316,10 +1332,10 @@ class WeightLogMenu extends StatefulWidget {
 }
 
 class _WeightLogMenuState extends State<WeightLogMenu> {
-  final List<String> dates = <String>['10/24', '10/25', '10/26', '10/27','10/28', '10/29', '10/30', '10/31','11/1', '11/11', '11/12', '11/13', '11/14', '11/16'];
-
   @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Scaffold
     (
       appBar: AppBar(title: Text('Weight Log'),),
@@ -1338,8 +1354,7 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
               height: 630,
               child: ListView.separated(
                 padding: const EdgeInsets.all(8),
-                // TODO - change based on the size of the lists
-                itemCount: dates.length,
+                itemCount: appState.weightList.length,
                 itemBuilder: (context, index) {
                   return Container(
                         height: 50,
@@ -1352,16 +1367,21 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text('   ${dates[index]}', style: TextStyle(fontSize: 17),),
-                                  Text('198', style: TextStyle(fontSize: 17),),
+                                  // Text('   ${dates[index]}', style: TextStyle(fontSize: 17),),
+                                  Text('   ${appState.weightList[index].date.month}/${appState.weightList[index].date.day}/${appState.weightList[index].date.year}', style: TextStyle(fontSize: 17),),
+                                    // Text('198', style: TextStyle(fontSize: 17),),
+                                    Text(
+                                      appState.weightList[index].weight.toString().replaceAll(RegExp(r'\.0$'), ''),
+                                      style: TextStyle(fontSize: 17),
+                                    ),
                                 ],
                               ),
                             ),
                             IconButton(
                               icon: Icon(Icons.more_horiz),
                               onPressed: () {
-                                // TODO - edit weight
-                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditWeightMenu()));
+                                appState.currentlySelectedWeight = appState.weightList[index]; // set the currently selected weight
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditWeightMenu())); // pass the weight data to the edit menu
                               },
                             )
                           ],
@@ -1390,11 +1410,20 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
   }
 }
 
-class LogNewWeightMenu extends StatelessWidget {
+class LogNewWeightMenu extends StatefulWidget {
   const LogNewWeightMenu({super.key});
 
   @override
+  State<LogNewWeightMenu> createState() => _LogNewWeightMenuState();
+}
+
+class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
+  WeightData newWeightData = WeightData(); // default weight data
+
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
     return Scaffold
     (
       appBar: AppBar(title: Text('Log New Weight'),),
@@ -1433,8 +1462,22 @@ class LogNewWeightMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'mm/dd/yyyy',
+                        hintText: '${DateTime.now().month}/${DateTime.now().day}/${DateTime.now().year}', // default to today's date
                       ),
+                      onChanged: (value) {
+                        // Convert the input to a date format
+                        try {
+                          final parts = value.split('/');
+                          if (parts.length == 3) {
+                            final month = int.tryParse(parts[0]) ?? DateTime.now().month;
+                            final day = int.tryParse(parts[1]) ?? DateTime.now().day;
+                            final year = int.tryParse(parts[2]) ?? DateTime.now().year;
+                            newWeightData.date = DateTime(year, month, day, 1);
+                          }
+                        } catch (e) {
+                          // If parsing fails, keep the default date
+                        }
+                      }
                     ),
                   ),
                   // Weight
@@ -1446,7 +1489,13 @@ class LogNewWeightMenu extends StatelessWidget {
                         border: OutlineInputBorder(),
                         hintText: 'Enter Weight',
                       ),
-                    ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),],
+                      onChanged: (value) {
+                        // Update the weight in the newWeightData as the user types
+                        newWeightData.weight = double.tryParse(value) ?? 0.0;
+                      },
+                    )
                   ),
                 ]
               )
@@ -1463,8 +1512,10 @@ class LogNewWeightMenu extends StatelessWidget {
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
-              // TODO - save button
-              print('finish save button for log new weight')
+              // Add the new weight data to the weight list in app state
+              appState.addWeight(newWeightData),
+              // Pop back to the weight log menu
+              Navigator.of(context).pop(),
             },
           ),
         ]
@@ -1474,11 +1525,19 @@ class LogNewWeightMenu extends StatelessWidget {
   }
 }
 
-class EditWeightMenu extends StatelessWidget {
+class EditWeightMenu extends StatefulWidget {
   const EditWeightMenu({super.key});
 
   @override
+  State<EditWeightMenu> createState() => _EditWeightMenuState();
+}
+
+class _EditWeightMenuState extends State<EditWeightMenu> {
+  @override
   Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    // Initialize editedWeightData with the currently selected weight data
+
     return Scaffold
     (
       appBar: AppBar(title: Text('Edit Weight'),),
@@ -1517,9 +1576,22 @@ class EditWeightMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        // TODO - default to already existing value
-                        hintText: '12/21/2024',
+                        hintText: '${appState.currentlySelectedWeight.date.month}/${appState.currentlySelectedWeight.date.day}/${appState.currentlySelectedWeight.date.year}', // default to the date of the weight data
                       ),
+                      onChanged: (value) {
+                        // Convert the input to a date format
+                        try {
+                          final parts = value.split('/');
+                          if (parts.length == 3) {
+                            final month = int.tryParse(parts[0]) ?? appState.currentlySelectedWeight.date.month;
+                            final day = int.tryParse(parts[1]) ?? appState.currentlySelectedWeight.date.day;
+                            final year = int.tryParse(parts[2]) ?? appState.currentlySelectedWeight.date.year;
+                            appState.updatedCurrentWeight(appState.currentlySelectedWeight.weight, DateTime(year, month, day, 1));
+                          }
+                        } catch (e) {
+                          // If parsing fails, keep the default date
+                        }
+                      }
                     ),
                   ),
                   // Weight
@@ -1529,9 +1601,14 @@ class EditWeightMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        // TODO - default to already existing value
-                        hintText: '191',
+                        hintText: appState.currentlySelectedWeight.weight.toString().replaceAll(RegExp(r'\.0$'), ''), // default to the weight of the weight data
                       ),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d*')),],
+                      onChanged: (value) {
+                        // Update the weight in the widget.weightData as the user types
+                        appState.updatedCurrentWeight(double.tryParse(value) ?? 0.0, appState.currentlySelectedWeight.date);
+                      },
                     ),
                   ),
                 ]
@@ -1540,19 +1617,19 @@ class EditWeightMenu extends StatelessWidget {
           ),
           // Spacer
           SizedBox(height: 150,),
-          // Save Button
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
-              ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
-            onPressed: () => {
-              // TODO - save button
-              print('finish save button for edit weight')
-            },
-          ),
+          // // Save Button
+          // ElevatedButton(
+          //   style: ElevatedButton.styleFrom(
+          //     fixedSize: const Size(250, 50),
+          //     foregroundColor: Colors.blueAccent, // text color
+          //     side: BorderSide(width: 3, color: Colors.blueAccent)
+          //     ),
+          //   child: Text('Save', style: TextStyle(fontSize: 20)),
+          //   onPressed: () => {
+          //     // TODO - save button
+          //     print('finish save button for edit weight')
+          //   },
+          // ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
@@ -1561,8 +1638,10 @@ class EditWeightMenu extends StatelessWidget {
               ),
             child: Text('Delete', style: TextStyle(fontSize: 20)),
             onPressed: () => {
-              // TODO - delete button
-              print('finish delete button for edit weight')
+              // Remove the weight data from the weight list in app state
+              appState.removeWeight(appState.currentlySelectedWeight),
+              // Pop back to the weight log menu
+              Navigator.of(context).pop(),
             },
           ),
         ]
@@ -1906,7 +1985,7 @@ class DefaultMealsMenu extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  for (var mealName in appState.defaultData.meals)
+                  for (int i = 0; i < appState.defaultData.meals.length; i++)
                     Text('Meal Name', style: TextStyle(fontSize: 17)),
                 ],
               ),
@@ -2423,13 +2502,9 @@ class FoodData {
   });
 }
 
-class WeightList {
-  List<WeightData> weights = [];
-}
-
 class WeightData {
   DateTime date = DateTime.now();
-  int weight = 999;
+  double weight = 160; // Default weight
 }
 
 class DefaultData {
