@@ -3032,9 +3032,7 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
                       // open Nutrition facts and wait for result
                       appState.currentlySelectedFood = Food(foodData: appState.foods[index]);
                       await Navigator.of(context).push(
-                        MaterialPageRoute(
-                        builder: (context) => FoodFactsForUserMeals(userMeal: widget.userMeal, foodInMeal: false,),
-                        ),
+                        MaterialPageRoute(builder: (context) => FoodFactsForUserMeals(userMeal: widget.userMeal, foodInMeal: false,),),
                       );
                       // After returning, rebuild to reflect changes in userMeal
                       setState(() {});
@@ -3084,6 +3082,8 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // save a duplicate of the currently selected food
+    Food currentlySelectedFood = appState.currentlySelectedFood;
 
     return Scaffold(
       appBar: AppBar(
@@ -3158,17 +3158,22 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
               side: BorderSide(width: 3, color: Colors.blueAccent),
             ),
             child: Text(
-              'Add to ${widget.userMeal.name}',
+                widget.foodInMeal ? 'Save' : 'Add to ${widget.userMeal.name}',
               style: TextStyle(fontSize: 20),
             ),
-            // TODO - update food that has already been added to the meal and save food that has not been added to the meal yet
             onPressed: () {
               if (widget.foodInMeal) {
-                // find the food that matches the currently selected food in the user meal and update its serving size
-                widget.userMeal.foodInMeal.firstWhere(
-                  (food) => food.foodData.name == appState.currentlySelectedFood.foodData.name,
-                  orElse: () => Food(foodData: FoodData(name: ''))
-                  ).serving = appState.currentlySelectedFood.serving;
+                // find the instance of food that was selected in the meal
+                int foodIndex = widget.userMeal.foodInMeal.indexWhere((food) => food.foodData == currentlySelectedFood.foodData);
+                // If the food is already in the meal, update it
+                if (foodIndex != -1) {
+                  // Update the serving size of the food in the meal
+                  widget.userMeal.foodInMeal[foodIndex].serving = appState.currentlySelectedFood.serving;
+                }
+                else {
+                  // If the food is not in the meal, add it
+                  widget.userMeal.addFood(appState.currentlySelectedFood);
+                }
               }
               else {
                 // If the food is not in the meal, add it
