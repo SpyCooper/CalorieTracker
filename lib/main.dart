@@ -51,6 +51,7 @@ class MyAppState extends ChangeNotifier {
   bool isAddFoodMenuOpen = false;
 
   List<UserMeal> userMeals = [];
+  UserMeal currentlySelectedUserMeal = UserMeal();
 
   // constructor
   MyAppState() {
@@ -199,6 +200,25 @@ class MyAppState extends ChangeNotifier {
   void addNewUserMeal(UserMeal userMeal) {
     // Add a new user meal to the list
     userMeals.add(userMeal);
+    notifyListeners();
+  }
+
+  void updateCurrentlySelectedUserMealData(UserMeal userMeal) {
+    // Update the currently selected user meal
+    currentlySelectedUserMeal.name = userMeal.name;
+    currentlySelectedUserMeal.foodInMeal = userMeal.foodInMeal;
+    notifyListeners();
+  }
+
+  void removeUserMeal(UserMeal userMeal) {
+    // Remove a user meal from the list
+    userMeals.remove(userMeal);
+    notifyListeners();
+  }
+
+  void updateCurrentlySelectedUserMealName(String newName) {
+    // Update the name of the currently selected user meal
+    currentlySelectedUserMeal.name = newName;
     notifyListeners();
   }
 }
@@ -2234,7 +2254,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       // TODO - finish the search bar
-                      hintText: 'Search',
+                      hintText: 'Search Foods',
                     ),
                   ),
                 ),
@@ -2303,7 +2323,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       // TODO - finish the search bar
-                      hintText: 'Search',
+                      hintText: 'Search Meals',
                     ),
                   ),
                 ),
@@ -2328,7 +2348,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
                                       Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
-                                      // Text('${appState.userMeals[index].}', style: TextStyle(fontSize: 17),),
+                                      Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
                                     ],
                                   ),
                                 ),
@@ -2336,7 +2356,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                             ),
                           onTap: () {
                             // Open the meal details
-                            // appState.currentlySelectedUserMeal = appState.userMeals[index];
+                            appState.currentlySelectedUserMeal = appState.userMeals[index];
                             Navigator.of(context).push(MaterialPageRoute( builder: (context) => EditUserMeal()));
                           },
                         ),
@@ -2821,16 +2841,18 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
                       Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
                       ],
                     ),
-                    onTap: () {
+                    onTap: () async {
                       // Set the selected food in app state if needed
                       var appState = context.read<MyAppState>();
                       appState.currentlySelectedFood = food;
                       // Navigate to FoodFactsForUserMeals for this user meal
-                      Navigator.of(context).push(
+                      await Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (context) => FoodFactsForUserMeals(userMeal: tempUserMeal, foodInMeal: true,),
                       ),
                       );
+                      // Refresh the UI after returning (in case food was removed)
+                      setState(() {});
                     },
                     ),
                   );
@@ -2883,7 +2905,6 @@ class _EditUserMealState extends State<EditUserMeal> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // UserMeal tempUserMeal = appState.currentlySelectedUserMeal;
 
     return Scaffold(
       appBar: AppBar(title: Text('Edit Meal'),),
@@ -2921,28 +2942,105 @@ class _EditUserMealState extends State<EditUserMeal> {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: 'Enter Name',
+                        hintText: appState.currentlySelectedUserMeal.name.isEmpty ? 'Enter Name' : appState.currentlySelectedUserMeal.name,
                       ),
-                      // onChanged: (value) => tempUserMeal.name = value
+                      onChanged: (value) => appState.updateCurrentlySelectedUserMealName(value),
                     ),
                   ),
                 ],
               )
             ],
           ),
+          // calories for the meal
+          SizedBox(
+            width: 350,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('Calories', style: TextStyle(fontSize: 20)),
+                // Display the total calories for the meal
+                Text('${appState.currentlySelectedUserMeal.getCalories()}', style: TextStyle(fontSize: 20)),
+              ],
+            ),
+          ),
+          // macro breakdown for the user meal
+          Text('Macro Nutrients', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          MacroBreakdown(
+            carbs: appState.currentlySelectedUserMeal.getCarbs(),
+            fat: appState.currentlySelectedUserMeal.getFat(),
+            protein: appState.currentlySelectedUserMeal.getProtein(),
+          ),
+          // list of foods in the meal
+          Text('Foods in Meal', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          SizedBox(
+            width: 350,
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Dynamically list foods in the meal with alternating background colors
+                ...List.generate(
+                  appState.currentlySelectedUserMeal.foodInMeal.length,
+                  (foodIndex) {
+                  final food = appState.currentlySelectedUserMeal.foodInMeal[foodIndex];
+                  final isGrey = foodIndex % 2 == 0;
+                  return Container(
+                    decoration: BoxDecoration(
+                    color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                    ),
+                    child: InkWell(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                      Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                      Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                      ],
+                    ),
+                    onTap: () async {
+                      // Set the selected food in app state if needed
+                      var appState = context.read<MyAppState>();
+                      appState.currentlySelectedFood = food;
+                      // Navigate to FoodFactsForUserMeals for this user meal
+                      await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => FoodFactsForUserMeals(
+                        userMeal: appState.currentlySelectedUserMeal,
+                        foodInMeal: true,
+                        ),
+                      ),
+                      );
+                      // Refresh the UI after returning (in case food was removed)
+                      setState(() {});
+                    },
+                    ),
+                  );
+                  }
+                ),
+                // Add button
+                ElevatedButton(
+                  child: Icon(Icons.add_box),
+                  onPressed: () async {
+                    // Navigate to the add food to meal menu and refresh after return
+                    await Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddFoodToUserMeal(userMeal: appState.currentlySelectedUserMeal)));
+                    setState(() {});
+                  }
+                ),
+              ],
+            )
+          ),
           // Spacer
-          SizedBox(height: 75,),
-          // Save Button
+          SizedBox(height: 25,),
+          // Delete Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: Colors.red, // text color
+              side: BorderSide(width: 3, color: Colors.red)
               ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
+            child: Text('Delete Meal', style: TextStyle(fontSize: 20)),
             onPressed: () {
-              // Add the food to the foods list
-              // appState.updateCurrentlySelectedUserMeal(tempUserMeal);
+              // Delete the user meal from the list
+              appState.removeUserMeal(appState.currentlySelectedUserMeal);
               // Navigate back to the saved foods menu and reset the tempData
               Navigator.of(context).pop();
             },
@@ -3183,6 +3281,21 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
               Navigator.of(context).pop();
             },
           ),
+          // If the food is in a meal, show the remove from meal button
+          if (widget.foodInMeal)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: const Size(350, 50),
+                foregroundColor: Colors.red, // text color
+                side: BorderSide(width: 3, color: Colors.red)
+              ),
+              child: Text('Remove from Meal', style: TextStyle(fontSize: 20)),
+              onPressed: () {
+                // Remove the food from the meal
+                widget.userMeal.removeFood(appState.currentlySelectedFood);
+                Navigator.of(context).pop();
+              },
+            ),
         ],
       ),
     );
@@ -3334,6 +3447,15 @@ class UserMeal {
       carbs += food.getCarbs();
     }
     return carbs;
+  }
+
+  void removeFood(Food food) {
+    for (int i = 0; i < foodInMeal.length; i++) {
+      if (foodInMeal[i] == food) {
+        foodInMeal.removeAt(i);
+        break; // Exit loop after removing the first instance
+      }
+    }
   }
 }
 
