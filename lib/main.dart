@@ -128,7 +128,11 @@ class MyAppState extends ChangeNotifier {
 
   void addMeal(Meal meal, {bool toDefault = false}) {
     // Add the meal to the current day's meals
-    currentDay.meals.add(meal);
+    Meal newMeal = Meal();
+    newMeal.mealName = meal.mealName;
+    newMeal.foods = meal.foods.map((food) => Food(foodData: food.foodData, serving: food.serving)).toList();
+    // Add the new meal to the current day's meals
+    currentDay.meals.add(newMeal);
     // Optionally add to default meals if not already present
     if (toDefault && !defaultData.meals.contains(meal.mealName)) {
       defaultData.meals.add(meal.mealName);
@@ -3578,7 +3582,17 @@ class DayData {
   }
 
   void addNewMeal(Meal meal) {
-    meals.add(meal);
+    Meal newMeal = Meal();
+    newMeal.mealName = meal.mealName;
+    // Copy foods from the provided meal
+    for (var food in meal.foods) {
+      newMeal.addNewFood(Food(
+        foodData: food.foodData,
+        serving: food.serving
+      ));
+    }
+    // Add the new meal to the meals list
+    meals.add(newMeal);
   }
 }
 
@@ -3621,8 +3635,12 @@ class Meal {
   }
 
   void addNewFood(Food food) {
-    // Check if the food already exists in the meal
-    foods.add(food);
+    Food newFood = Food(
+      foodData: food.foodData,
+      serving: food.serving
+    );
+
+    foods.add(newFood);
   }
 }
 
