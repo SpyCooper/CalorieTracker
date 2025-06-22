@@ -85,9 +85,6 @@ class MyAppState extends ChangeNotifier {
   void addNewFoodToMeal(Meal meal, Food food) {
     // Add the food to the currently selected meal
     meal.addNewFood(food);
-    // Reset the currently selected food
-
-
     notifyListeners();
   }
 
@@ -219,6 +216,17 @@ class MyAppState extends ChangeNotifier {
   void updateCurrentlySelectedUserMealName(String newName) {
     // Update the name of the currently selected user meal
     currentlySelectedUserMeal.name = newName;
+    notifyListeners();
+  }
+
+  void addUserMealToCurrentMeal(UserMeal userMeal, double serving) {
+    // Add the foods from the user meal to the currently selected meal
+    for (var food in userMeal.foodInMeal) {
+      // Create a new Food object with the specified serving size
+      Food newFood = Food(foodData: food.foodData, serving: serving);
+      // Add the new food to the currently selected meal
+      currentlySelectedMeal.addNewFood(newFood);
+    }
     notifyListeners();
   }
 }
@@ -561,6 +569,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
           bottom: TabBar(
             tabs: [
               Tab(icon: Icon(Icons.search)),
+              Tab(icon: Icon(Icons.dining)),
               Tab(icon: Icon(Icons.barcode_reader)),
             ]
           ),
@@ -636,6 +645,74 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                     Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()))
                   },
                 ),
+              ],
+            ),
+            // User Meal Tab
+            Column(
+              spacing: 20,
+              children: [
+              SizedBox(height: 0,),
+              // search bar
+              SizedBox(
+                width: 350,
+                height: 50,
+                child: TextField(
+                decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: 'Search Meals',
+                ),
+                ),
+              ),
+              // list of user meals
+              SizedBox(
+                width: 370,
+                height: 570,
+                child: ListView.separated(
+                padding: const EdgeInsets.all(8),
+                itemCount: appState.userMeals.length,
+                itemBuilder: (context, index) {
+                  return Container(
+                  height: 50,
+                  color: const Color.fromARGB(169, 207, 207, 207),
+                  child: InkWell(
+                    child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      SizedBox(
+                      width: 330,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                        Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
+                        Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
+                        ],
+                      ),
+                      ),
+                    ],
+                    ),
+                    onTap: () {
+                    // open Nutrition facts
+                    appState.currentlySelectedUserMeal = appState.userMeals[index];
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserMealNutritionFacts()));
+                    },
+                  ),
+                  );
+                },
+                separatorBuilder: (context, index) => const Divider(),
+                ),
+              ),
+              // Create new user meal button
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                fixedSize: const Size(350, 50),
+                foregroundColor: Colors.blueAccent, // text color
+                side: BorderSide(width: 3, color: Colors.blueAccent)
+                ),
+                child: Text('Create New User Meal', style: TextStyle(fontSize: 20)),
+                onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewUserMeal()));
+                },
+              ),
               ],
             ),
             // Scan Tab
@@ -1092,6 +1169,148 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
                 Navigator.of(context).pop(); // Close the nutrition facts page
               },
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class UserMealNutritionFacts extends StatefulWidget {
+  const UserMealNutritionFacts({super.key});
+
+  @override
+  State<UserMealNutritionFacts> createState() => _UserMealNutritionFactsState();
+}
+
+class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
+  double servingSize = 1; // Default serving size
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    return Scaffold(
+      appBar: AppBar(title: Text('${appState.currentlySelectedUserMeal.name} Nutrition Facts')),
+      body: Column(
+        spacing: 15,
+        children: [
+          // Meal name
+          Text(appState.currentlySelectedUserMeal.name, style: TextStyle(fontSize: 25)),
+          // Calories
+          SizedBox(
+            width: 350,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                Text('Calories', style: TextStyle(fontSize: 25)),
+                // Update calories when serving size changes
+                StatefulBuilder(
+                  builder: (context, setState) {
+                  return Text(
+                    '${(appState.currentlySelectedUserMeal.getCalories() * servingSize).ceil()}',
+                    style: TextStyle(fontSize: 25),
+                  );
+                  },
+                ),
+              ],
+            ),
+          ),
+          // Macros
+          Text('Macro Nutrients', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline)),
+            // Macro breakdown that updates when serving size changes
+            StatefulBuilder(
+            builder: (context, setState) {
+              return MacroBreakdown(
+              carbs: (appState.currentlySelectedUserMeal.getCarbs() * servingSize).ceil(),
+              fat: (appState.currentlySelectedUserMeal.getFat() * servingSize).ceil(),
+              protein: (appState.currentlySelectedUserMeal.getProtein() * servingSize).ceil(),
+              );
+            },
+            ),
+          // Options
+          Text('Options', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline)),
+          // Labels for inputs
+            Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Column(
+              spacing: 33,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text('Serving Size', style: TextStyle(fontSize: 17)),
+              ],
+              ),
+              SizedBox(width: 75),
+              Column(
+              spacing: 7,
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                SizedBox(
+                width: 150,
+                height: 50,
+                child: TextField(
+                  decoration: InputDecoration(
+                  border: OutlineInputBorder(),
+                  hintText: servingSize.toString().replaceAll('.0', ''),
+                  ),
+                  keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      setState(() {
+                        servingSize = double.tryParse(value) ?? 1;
+                      });
+                  },
+                ),
+                ),
+              ],
+              ),
+            ],
+            ),
+          // Foods in meal
+          Text('Foods in Meal', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline)),
+          SizedBox(
+            width: 350,
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...List.generate(
+                  appState.currentlySelectedUserMeal.foodInMeal.length,
+                  (foodIndex) {
+                    final food = appState.currentlySelectedUserMeal.foodInMeal[foodIndex];
+                    final isGrey = foodIndex % 2 == 0;
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(food.foodData.name, style: TextStyle(fontSize: 20)),
+                          Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20)),
+                        ],
+                      ),
+                    );
+                  }
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 25),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent,
+              side: BorderSide(width: 3, color: Colors.blueAccent),
+            ),
+            child: Text('Add to Meal', style: TextStyle(fontSize: 20)),
+            onPressed: () {
+              // Add this user meal to the currently selected meal in the current day
+              appState.addUserMealToCurrentMeal(appState.currentlySelectedUserMeal, servingSize);
+              Navigator.of(context).pop();
+            },
+          ),
         ],
       ),
     );
@@ -1811,7 +2030,7 @@ class SettingsPage extends StatelessWidget {
                 mainAxisSize: MainAxisSize.max,
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Saved Foods', style: TextStyle(fontSize: 20)),
+                  Text('Saved Foods & Meals', style: TextStyle(fontSize: 20)),
                   Icon(Icons.arrow_right_sharp, size: 30,),
                 ],
               )
@@ -2228,7 +2447,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
       child: Scaffold
       (
         appBar: AppBar(
-          title: Text('Saved Foods'),
+          title: Text('Saved Foods & Meals'),
           // search or scan tabs selection
           bottom: TabBar(
             tabs: [
