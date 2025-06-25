@@ -3754,7 +3754,7 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
               foregroundColor: Colors.blueAccent, // text color
               side: BorderSide(width: 3, color: Colors.blueAccent)
             ),
-            child: Text('Save', style: TextStyle(fontSize: 20)),
+            child: Text('Save Food', style: TextStyle(fontSize: 20)),
             onPressed: () {
               appState.addFoodToDatabase(tempData);
               Navigator.of(context).pop();
