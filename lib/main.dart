@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:openfoodfacts/openfoodfacts.dart';
+
 
 void main() {
   // TODO - create the current date and time if it is not already set
@@ -232,6 +235,42 @@ class MyAppState extends ChangeNotifier {
       currentlySelectedMeal.addNewFood(newFood);
     }
     notifyListeners();
+  }
+
+  Future<FoodData?> getFoodDataFromBarcode(String barcode) async {
+    // set a UserAgent to avoid issues with the Open Food Facts API
+    OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'CalorieTrackerApp');
+    final ProductQueryConfiguration configuration = ProductQueryConfiguration(
+      barcode,
+      fields: [ProductField.ALL],
+      version: ProductQueryVersion.v3,
+    );
+    final ProductResultV3 result = await OpenFoodAPIClient.getProductV3(configuration);
+    if (result.status == ProductResultV3.statusSuccess) {
+      String name = result.product?.productName ?? 'Unknown Product';
+      String brand = result.product?.brands ?? 'Unknown Brand';
+      String productName = '$brand $name';
+
+      if (result.product?.nutriments != null) {
+        Nutriments nutriments = result.product!.nutriments!;
+        int calories = nutriments.getValue(Nutrient.energyKCal, PerSize.serving)?.round() ?? 0;
+        int carbs = nutriments.getValue(Nutrient.carbohydrates, PerSize.serving)?.round() ?? 0;
+        int fat = nutriments.getValue(Nutrient.fat, PerSize.serving)?.round() ?? 0;
+        int protein = nutriments.getValue(Nutrient.proteins, PerSize.serving)?.round() ?? 0;
+        FoodData foodData = FoodData(
+          name: productName,
+          calories: calories,
+          carbs: carbs,
+          fat: fat,
+          protein: protein,
+        );
+        return foodData;
+      } else {
+        throw Exception('No nutritional information available for product with barcode: $barcode');
+      }
+    } else {
+      throw Exception('product not found, please insert data for $barcode');
+    }
   }
 }
 
@@ -564,7 +603,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
     var appState = context.watch<MyAppState>();
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold
       (
         appBar: AppBar(
@@ -720,7 +759,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
               ],
             ),
             // Scan Tab
-            Placeholder(),
+            Scanner(),
           ]
         )
       ),
@@ -2603,8 +2642,8 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                 ),
               ],
             ),
-            // TODO - Scan Tab
-            Placeholder(),
+            // Scan Tab
+            Scanner(),
           ]
         )
       ),
@@ -3521,6 +3560,208 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
             ),
         ],
       ),
+    );
+  }
+}
+
+class Scanner extends StatefulWidget {
+  const Scanner({super.key});
+
+  @override
+  State<Scanner> createState() => _ScannerState();
+}
+
+class _ScannerState extends State<Scanner> {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    return MobileScanner(
+      controller: MobileScannerController(
+        detectionSpeed: DetectionSpeed.noDuplicates,
+        facing: CameraFacing.back,
+      ),
+      onDetect: (scanResult) {
+        String? scannedBarcode = scanResult.barcodes.first.rawValue;
+        if (scannedBarcode == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to scan barcode')),
+          );
+          return;
+        }
+        else {
+          appState.getFoodDataFromBarcode(scannedBarcode).then((foodData) {
+          if (foodData != null) {
+            Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => AddScannedFoodUI(scannedFoodData: foodData),
+            ),
+            );
+          }
+          }).catchError((error) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(error.toString())),
+          );
+          });
+        }
+      },
+    );
+  }
+}
+
+class AddScannedFoodUI extends StatefulWidget {
+  final FoodData scannedFoodData;
+
+  const AddScannedFoodUI({super.key, required this.scannedFoodData});
+
+  @override
+  State<AddScannedFoodUI> createState() => _AddScannedFoodUIState();
+}
+
+class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
+  late FoodData tempData;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize tempData with the scanned food data
+    tempData = FoodData(
+      name: widget.scannedFoodData.name,
+      calories: widget.scannedFoodData.calories,
+      carbs: widget.scannedFoodData.carbs,
+      fat: widget.scannedFoodData.fat,
+      protein: widget.scannedFoodData.protein,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    return Scaffold(
+      appBar: AppBar(title: Text('Add Scanned Food'),),
+      body: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        spacing: 15,
+        children: [
+          SizedBox(height: 0,),
+          Text('Food Info', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Labels for the inputs
+              Column(
+                spacing: 33,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text('Food Name', style: TextStyle(fontSize: 17)),
+                  Text('Calories', style: TextStyle(fontSize: 17)),
+                  Text('Carbs', style: TextStyle(fontSize: 17)),
+                  Text('Fat', style: TextStyle(fontSize: 17)),
+                  Text('Protein', style: TextStyle(fontSize: 17)),
+                ],
+              ),
+              // spacer
+              SizedBox(width: 50,),
+              // Input fields
+              Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  // Name
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: tempData.name,
+                      ),
+                      controller: TextEditingController(text: tempData.name),
+                      onChanged: (value) => tempData.name = value,
+                    ),
+                  ),
+                  // Calories
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: tempData.calories.toString(),
+                      ),
+                      controller: TextEditingController(text: tempData.calories.toString()),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) => tempData.calories = int.tryParse(value) ?? 0,
+                    ),
+                  ),
+                  // Carbs
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: tempData.carbs.toString(),
+                      ),
+                      controller: TextEditingController(text: tempData.carbs.toString()),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) => tempData.carbs = int.tryParse(value) ?? 0,
+                    ),
+                  ),
+                  // Fat
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: tempData.fat.toString(),
+                      ),
+                      controller: TextEditingController(text: tempData.fat.toString()),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) => tempData.fat = int.tryParse(value) ?? 0,
+                    ),
+                  ),
+                  // Protein
+                  SizedBox(
+                    width: 175,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: tempData.protein.toString(),
+                      ),
+                      controller: TextEditingController(text: tempData.protein.toString()),
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      onChanged: (value) => tempData.protein = int.tryParse(value) ?? 0,
+                    ),
+                  ),
+                ],
+              )
+            ],
+          ),
+          SizedBox(height: 75,),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              fixedSize: const Size(250, 50),
+              foregroundColor: Colors.blueAccent, // text color
+              side: BorderSide(width: 3, color: Colors.blueAccent)
+            ),
+            child: Text('Save', style: TextStyle(fontSize: 20)),
+            onPressed: () {
+              appState.addFoodToDatabase(tempData);
+              Navigator.of(context).pop();
+            },
+          ),
+        ]
+      )
     );
   }
 }
