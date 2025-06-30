@@ -588,10 +588,14 @@ class MealsPage extends StatelessWidget {
                     'Calories Left',
                     style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
                   ),
-                  // TODO - change the color of the text based on the calories left
                   Text(
                     '${appState.currentDay.maxCalories - appState.currentDay.getCalories()}',
-                    style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+                    style: TextStyle(
+                      fontSize: 30,
+                      color: (appState.currentDay.maxCalories - appState.currentDay.getCalories()) < 0
+                        ? Colors.red
+                        : theme.textTheme.bodyLarge?.color,
+                    ),
                   ),
                 ]
               ),
@@ -2708,7 +2712,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                 ),
               ],
             ),
-            // TODO - Meal Tab
+            // Meal Tab
             Column(
               spacing: 20,
               children: [
