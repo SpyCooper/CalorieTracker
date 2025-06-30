@@ -130,8 +130,8 @@ class _MyAppState extends State<MyApp> {
           home: Stack(
             children: [
               HomePage(),
-              // Floating action button at the bottom right
-                Positioned(
+              // Floating action button to toggle light/dark mode
+              Positioned(
                 top: 27,
                 right: 15,
                 child: FloatingActionButton(
@@ -160,29 +160,27 @@ class _MyAppState extends State<MyApp> {
 
 // Current state of the app
 class MyAppState extends ChangeNotifier {
+  // TODO - move these to a database
   // List of all the days
   List<DayData> days = [];
-
   // contains all the foods in the database
   List<FoodData> foods = [];
-
-  // default data
-  DefaultData defaultData = DefaultData();
-
-  // current day data
-  late DayData currentDay;
-
-  Food currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
-  Meal currentlySelectedMeal = Meal();
-
+  // contains all the user meals
+  List<UserMeal> userMeals = [];
   // weight list
   List<WeightData> weightList= [];
   WeightData currentlySelectedWeight = WeightData();
 
-  bool isAddFoodMenuOpen = false;
-
-  List<UserMeal> userMeals = [];
+  // default data
+  DefaultData defaultData = DefaultData();
+  // current day data
+  late DayData currentDay;
+  // currently selected things
+  Food currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
+  Meal currentlySelectedMeal = Meal();
   UserMeal currentlySelectedUserMeal = UserMeal();
+  // flag to check if the add food menu is open
+  bool isAddFoodMenuOpen = false;
 
   // constructor
   MyAppState() {
@@ -208,6 +206,7 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Add a new food to the database
   void addFoodToDatabase(FoodData food) {
     foods.add(food);
     // Sort the foods list by name
@@ -215,12 +214,14 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Add a new food to the currently selected meal
   void addNewFoodToMeal(Meal meal, Food food) {
     // Add the food to the currently selected meal
     meal.addNewFood(food);
     notifyListeners();
   }
 
+  // Remove a food from the currently selected meal
   void removeFoodFromMeal(Meal meal, Food food) {
     // Remove the food from the currently selected meal
     meal.foods.remove(food);
@@ -228,27 +229,30 @@ class MyAppState extends ChangeNotifier {
     currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
     // Reset the currently selected meal
     currentlySelectedMeal = Meal();
-
     notifyListeners();
   }
 
+  // Change the serving size of the currently selected food
   void servingSizeChanged(double newServing) {
     // Update the serving size of the currently selected food
     currentlySelectedFood.serving = newServing;
     notifyListeners();
   }
 
+  // Set the currently selected meal
   void setCurrentlySelectedMeal(Meal meal) {
     currentlySelectedMeal = meal;
     notifyListeners();
   }
 
+  // Set the currently selected food
   void setNewMealName(String newName) {
     // Update the meal name of the currently selected meal
     currentlySelectedMeal.mealName = newName;
     notifyListeners();
   }
 
+  // Remove a meal from the current day's meals
   void removeMeal(Meal meal, {bool futureDays = false}) {
     // Remove the meal from the current day's meals
     currentDay.meals.remove(meal);
@@ -259,6 +263,7 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Add a meal to the current day's meals
   void addMeal(Meal meal, {bool toDefault = false}) {
     // Add the meal to the current day's meals
     Meal newMeal = Meal();
@@ -266,13 +271,14 @@ class MyAppState extends ChangeNotifier {
     newMeal.foods = meal.foods.map((food) => Food(foodData: food.foodData, serving: food.serving)).toList();
     // Add the new meal to the current day's meals
     currentDay.meals.add(newMeal);
-    // Optionally add to default meals if not already present
+    // Add to default meals
     if (toDefault && !defaultData.meals.contains(meal.mealName)) {
       defaultData.meals.add(meal.mealName);
     }
     notifyListeners();
   }
 
+  // Add a new weight to the list of weights
   void addWeight(WeightData weight) {
     // Add a new weight entry to the weight list
     weightList.add(weight);
@@ -281,8 +287,8 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Update the currently selected weight
   void updatedCurrentWeight(double weight, DateTime date) {
-    // Update the currently selected weight entry
     currentlySelectedWeight.weight = weight;
     currentlySelectedWeight.date = date;
     // sort the weight list by date
@@ -290,12 +296,13 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Remove a weight entry from the list of weigths
   void removeWeight(WeightData weight) {
-    // Remove a weight entry from the weight list
     weightList.remove(weight);
     notifyListeners();
   }
 
+  // Set the calorie and macro goals for current and future days
   void setCalorieAndMacroGoals(int calories, int carbs, int fat, int protein) {
     // Set the daily calorie and macro goals in default data
     defaultData.dailyCalories = calories;
@@ -313,51 +320,52 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Update the currently selected food's data
   void updateCurrentlySelectedFoodData(FoodData foodData) {
-    // Update the currently selected food's data
     currentlySelectedFood.foodData = foodData;
     notifyListeners();
   }
 
+  // Change the name of the default meal
   void changeDefaultMealName(String mealName, String defaultMeal) {
-    // Change the name of the default meal
     if (defaultData.meals.contains(defaultMeal)) {
       int index = defaultData.meals.indexOf(defaultMeal);
       defaultData.meals[index] = mealName;
-    } else {
+    }
+    else {
       // If the default meal is not found, add it
       defaultData.meals.add(mealName);
     }
     notifyListeners();
   }
 
+  // Add a new user meal to the list of user meals
   void addNewUserMeal(UserMeal userMeal) {
-    // Add a new user meal to the list
     userMeals.add(userMeal);
     notifyListeners();
   }
 
+  // Update the currently selected user meal
   void updateCurrentlySelectedUserMealData(UserMeal userMeal) {
-    // Update the currently selected user meal
     currentlySelectedUserMeal.name = userMeal.name;
     currentlySelectedUserMeal.foodInMeal = userMeal.foodInMeal;
     notifyListeners();
   }
 
+  // Remove a user meal from the list of user meals
   void removeUserMeal(UserMeal userMeal) {
-    // Remove a user meal from the list
     userMeals.remove(userMeal);
     notifyListeners();
   }
 
+  // Update the name of the currently selected user meal
   void updateCurrentlySelectedUserMealName(String newName) {
-    // Update the name of the currently selected user meal
     currentlySelectedUserMeal.name = newName;
     notifyListeners();
   }
 
+  // Add a user meal to the currently selected meal with a specified serving size
   void addUserMealToCurrentMeal(UserMeal userMeal, double serving) {
-    // Add the foods from the user meal to the currently selected meal
     for (var food in userMeal.foodInMeal) {
       // Create a new Food object with the specified serving size
       Food newFood = Food(foodData: food.foodData, serving: food.serving * serving);
@@ -367,6 +375,7 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Get food data from a barcode using Open Food Facts API
   Future<FoodData?> getFoodDataFromBarcode(String barcode) async {
     // set a UserAgent to avoid issues with the Open Food Facts API
     OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'CalorieTrackerApp');
@@ -375,18 +384,23 @@ class MyAppState extends ChangeNotifier {
       fields: [ProductField.ALL],
       version: ProductQueryVersion.v3,
     );
+    // Fetch the product data from Open Food Facts API
     final ProductResultV3 result = await OpenFoodAPIClient.getProductV3(configuration);
+    // Check if the product was found
     if (result.status == ProductResultV3.statusSuccess) {
+      // Create the food name
       String name = result.product?.productName ?? 'Unknown Product';
       String brand = result.product?.brands ?? 'Unknown Brand';
       String productName = '$brand $name';
 
+      // Check if the product has nutritional information
       if (result.product?.nutriments != null) {
         Nutriments nutriments = result.product!.nutriments!;
         int calories = nutriments.getValue(Nutrient.energyKCal, PerSize.serving)?.round() ?? 0;
         int carbs = nutriments.getValue(Nutrient.carbohydrates, PerSize.serving)?.round() ?? 0;
         int fat = nutriments.getValue(Nutrient.fat, PerSize.serving)?.round() ?? 0;
         int protein = nutriments.getValue(Nutrient.proteins, PerSize.serving)?.round() ?? 0;
+        // Create a FoodData object with the nutritional information
         FoodData foodData = FoodData(
           name: productName,
           calories: calories,
@@ -394,11 +408,14 @@ class MyAppState extends ChangeNotifier {
           fat: fat,
           protein: protein,
         );
+        // return the food data
         return foodData;
-      } else {
+      }
+      else {
         throw Exception('No nutritional information available for product with barcode: $barcode');
       }
-    } else {
+    }
+    else {
       throw Exception('product not found, please insert data for $barcode');
     }
   }
@@ -420,6 +437,7 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     var theme = Theme.of(context);
     
+    // Sets the page based on the current selected page index
     Widget page;
     switch (selectedPageIndex)
     {
@@ -436,11 +454,12 @@ class _HomePageState extends State<HomePage> {
         throw UnimplementedError('no widget for $selectedPageIndex');
     }
 
+    // Get the current app state
     var appState = context.watch<MyAppState>();
 
     return Scaffold(
       appBar: AppBar(
-        // set the title to today's date
+        // Dropdown to change the current day
         title: SizedBox(
           width: 180,
           child: DropdownButton<DateTime>(
@@ -468,11 +487,11 @@ class _HomePageState extends State<HomePage> {
         ),
         backgroundColor: theme.primaryColor
       ),
+      // Bottom navigation bar with the main pages
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem> [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.line_axis_rounded), label: 'Progress'),
-          //  BottomNavigationBarItem(icon: Icon(Icons.food_bank), label: 'Food'),
           BottomNavigationBarItem(icon: Icon(Icons.settings), label: 'Settings'),
         ],
         currentIndex: selectedPageIndex,
@@ -508,74 +527,75 @@ class MealsPage extends StatelessWidget {
         // Calories Header
         InkWell(
           child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Max calories
-            Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(
-                'Max Calories',
-                style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+              // Max calories
+              Column(
+              children: [
+                Text(
+                  'Max Calories',
+                  style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                ),
+                Text(
+                  '${appState.currentDay.maxCalories}',
+                  style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+                ),
+              ]
               ),
-              Text(
-                '${appState.currentDay.maxCalories}',
-                style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+              // minus
+              Column(
+              children: [
+                Text(
+                  '',
+                  style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                ),
+                Text(
+                  '-',
+                  style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+                ),
+              ]
               ),
-            ]
-            ),
-            // minus
-            Column(
-            children: [
-              Text(
-              '',
-              style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+              // Calories Used
+              Column(
+                children: [
+                  Text(
+                    'Calories Used',
+                    style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                  Text(
+                    '${appState.currentDay.getCalories()}',
+                    style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                ]
               ),
-              Text(
-              '-',
-              style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+              // equals
+              Column(
+                children: [
+                  Text(
+                    '',
+                    style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                  Text(
+                    '=',
+                    style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                ]
               ),
-            ]
-            ),
-            // Calories Used
-            Column(
-            children: [
-              Text(
-              'Calories Used',
-              style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+              // Calories Left
+              Column(
+                children: [
+                  Text(
+                    'Calories Left',
+                    style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                  // TODO - change the color of the text based on the calories left
+                  Text(
+                    '${appState.currentDay.maxCalories - appState.currentDay.getCalories()}',
+                    style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
+                  ),
+                ]
               ),
-              Text(
-              '${appState.currentDay.getCalories()}',
-              style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
-              ),
-            ]
-            ),
-            // equals
-            Column(
-            children: [
-              Text(
-                '',
-                style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
-              ),
-              Text(
-                '=',
-                style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
-              ),
-            ]
-            ),
-            // Calories Left
-            Column(
-            children: [
-              Text(
-                'Calories Left',
-                style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
-              ),
-              Text(
-                '${appState.currentDay.maxCalories - appState.currentDay.getCalories()}',
-                style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
-              ),
-            ]
-            ),
-          ],
+            ],
           ),
           onTap: () {
           Navigator.of(context).push(MaterialPageRoute(builder: (context) => DailyNutritionMenu()));
@@ -596,10 +616,10 @@ class MealsPage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: ElevatedButton(
-          child: Text('Add new meal', style: TextStyle(fontSize: 20, color: theme.colorScheme.primary)),
-          onPressed: () {
-            Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddNewMeal()));
-          }
+            child: Text('Add new meal', style: TextStyle(fontSize: 20, color: theme.colorScheme.primary)),
+            onPressed: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddNewMeal()));
+            }
           ),
         ),
         SizedBox(height: 25),
@@ -646,12 +666,12 @@ class _MealBoxState extends State<MealBox> {
                     Row(
                       spacing: 5,
                       children: [
-                        // sets the meal name
+                        // Sets the meal name
                         Text(widget.meal.mealName, style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.left),
                         Icon(Icons.edit, color:theme.textTheme.bodySmall?.color,),
                       ],
                     ),
-                    // sets the calories for the meal
+                    // Sets the calories for the meal
                     Text(
                       '${widget.meal.getCalories()}',
                       style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.right
@@ -669,29 +689,29 @@ class _MealBoxState extends State<MealBox> {
             ...List.generate(
               widget.meal.foods.length,
               (foodIndex) {
-              final food = widget.meal.foods[foodIndex];
-              final isAlt = foodIndex % 2 == 0;
-              return Container(
-                decoration: BoxDecoration(
-                color: isAlt ? null : theme.colorScheme.primaryContainer ,
-                ),
-                child: InkWell(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                  Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                  Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
-                  ],
-                ),
-                onTap: () {
-                  // Set the selected food in app state if needed
-                  context.read<MyAppState>().currentlySelectedFood = food;
-                  // Set the currently selected meal in app state
-                  context.read<MyAppState>().currentlySelectedMeal = widget.meal;
-                  Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
-                }
-                ),
-              );
+                final food = widget.meal.foods[foodIndex];
+                final isAlt = foodIndex % 2 == 0;
+                return Container(
+                  decoration: BoxDecoration(
+                    color: isAlt ? null : theme.colorScheme.primaryContainer ,
+                  ),
+                  child: InkWell(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                      Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                      Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                      ],
+                    ),
+                    onTap: () {
+                      // Set the selected food in app state if needed
+                      context.read<MyAppState>().currentlySelectedFood = food;
+                      // Set the currently selected meal in app state
+                      context.read<MyAppState>().currentlySelectedMeal = widget.meal;
+                      Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                    }
+                  ),
+                );
               }
             ),
             // Add button
@@ -718,7 +738,6 @@ class AddFoodMenu extends StatefulWidget {
 }
 
 class _AddFoodMenuState extends State<AddFoodMenu>{
-  // set isAddFoodMenuOpen to true while the menu is opened
   @override
   void initState() {
     super.initState();
@@ -731,7 +750,6 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
   @override
   void deactivate() {
     // Set isAddFoodMenuOpen to false when the menu is closed
-    // This is safe because deactivate is called before dispose and context is still valid
     context.read<MyAppState>().isAddFoodMenuOpen = false;
     super.deactivate();
   }
@@ -757,7 +775,6 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
           ),
         ),
 
-        
         body: TabBarView(
           children: [
             // Search Tab
@@ -786,30 +803,30 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                     itemCount: appState.foods.length,
                     itemBuilder: (context, index) {
                       return Container(
-                      height: 50,
-                      color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
-                      child: InkWell(
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                          SizedBox(
-                            width: 330,
-                            child: Row(
+                        height: 50,
+                        color: theme.colorScheme.primaryContainer,
+                        child: InkWell(
+                          child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
-                              Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
+                              SizedBox(
+                                width: 330,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
+                                    Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
+                                  ],
+                                ),
+                              ),
                             ],
-                            ),
                           ),
-                          ],
+                          onTap: () {
+                            // open Nutrition facts
+                            appState.currentlySelectedFood = Food(foodData: appState.foods[index], serving: 1);
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                          },
                         ),
-                        onTap: () {
-                        // open Nutrition facts
-                        appState.currentlySelectedFood = Food(foodData: appState.foods[index], serving: 1);
-                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
-                        },
-                      ),
                       );
                     },
                     separatorBuilder: (context, index) => Divider(color: theme.colorScheme.onSurface,),
@@ -818,10 +835,10 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 // Create new food to database button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      fixedSize: const Size(350, 50),
-                      foregroundColor: theme.colorScheme.primary, // text color
-                      side: BorderSide(width: 3, color: theme.colorScheme.primary)
-                    ),
+                    fixedSize: const Size(350, 50),
+                    foregroundColor: theme.colorScheme.primary, // text color
+                    side: BorderSide(width: 3, color: theme.colorScheme.primary)
+                  ),
                   child: Text('Create New Food', style: TextStyle(fontSize: 20)),
                   onPressed: () => {
                     Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()))
@@ -833,68 +850,68 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
             Column(
               spacing: 20,
               children: [
-              SizedBox(height: 0,),
-              // search bar
-              SizedBox(
-                width: 350,
-                height: 50,
-                child: TextField(
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: 'Search Meals',
-                ),
-                ),
-              ),
-              // list of user meals
-              SizedBox(
-                width: 370,
-                height: 570,
-                child: ListView.separated(
-                padding: const EdgeInsets.all(8),
-                itemCount: appState.userMeals.length,
-                itemBuilder: (context, index) {
-                  return Container(
+                SizedBox(height: 0,),
+                // search bar
+                SizedBox(
+                  width: 350,
                   height: 50,
-                  color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
-                  child: InkWell(
-                    child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SizedBox(
-                      width: 330,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                        Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
-                        Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
-                        ],
-                      ),
-                      ),
-                    ],
+                  child: TextField(
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: 'Search Meals',
                     ),
-                    onTap: () {
-                    // open Nutrition facts
-                    appState.currentlySelectedUserMeal = appState.userMeals[index];
-                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserMealNutritionFacts()));
-                    },
                   ),
-                  );
-                },
-                separatorBuilder: (context, index) => const Divider(),
                 ),
-              ),
-              // Create new user meal button
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                fixedSize: const Size(350, 50),
-                foregroundColor: theme.colorScheme.primary, // text color
-                side: BorderSide(width: 3, color: theme.colorScheme.primary)
+                // list of user meals
+                SizedBox(
+                  width: 370,
+                  height: 570,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(8),
+                    itemCount: appState.userMeals.length,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        height: 50,
+                        color: theme.colorScheme.primaryContainer,
+                        child: InkWell(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                                SizedBox(
+                                width: 330,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                  Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
+                                  Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          onTap: () {
+                            // open Nutrition facts
+                            appState.currentlySelectedUserMeal = appState.userMeals[index];
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserMealNutritionFacts()));
+                          },
+                        ),
+                      );
+                    },
+                    separatorBuilder: (context, index) => const Divider(),
+                  ),
                 ),
-                child: Text('Create New User Meal', style: TextStyle(fontSize: 20)),
-                onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewUserMeal()));
-                },
-              ),
+                // Create new user meal button
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(350, 50),
+                    foregroundColor: theme.colorScheme.primary, // text color
+                    side: BorderSide(width: 3, color: theme.colorScheme.primary)
+                  ),
+                  child: Text('Create New User Meal', style: TextStyle(fontSize: 20)),
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewUserMeal()));
+                  },
+                ),
               ],
             ),
             // Scan Tab
@@ -912,8 +929,7 @@ class EditMealMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // var theme = Theme.of(context);
-
+    
     return Scaffold
     (
       appBar: AppBar(title: Text('Edit ${appState.currentlySelectedMeal.mealName}'),),
@@ -990,18 +1006,6 @@ class EditMealMenu extends StatelessWidget {
           ),
           // Spacer
           SizedBox(height: 75,),
-          // // Save Button
-          // ElevatedButton(
-          //   style: ElevatedButton.styleFrom(
-          //     fixedSize: const Size(250, 50),
-          //     foregroundColor: theme.colorScheme.primary, // text color
-          //     side: BorderSide(width: 3, color: theme.colorScheme.primary)
-          //     ),
-          //   child: Text('Save', style: TextStyle(fontSize: 20)),
-          //   onPressed: () => {
-          //     print('finish save button for edit meal')
-          //   },
-          // ),
           // Remove button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
@@ -1028,14 +1032,12 @@ class RemoveMealPopUp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // var theme = Theme.of(context);
 
     return SizedBox(
       width: 300,
       height: 200,
       child: AlertDialog(
         title: const Text('Are you sure you want to remove this meal?'),
-        // content: const Text('Body text'),
         actions: [
           // Cancel button
           TextButton(
@@ -1068,7 +1070,6 @@ class TypeOfMealDeletion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // var theme = Theme.of(context);
 
     return SizedBox(
       width: 300,
@@ -1167,7 +1168,7 @@ class _AddNewMealState extends State<AddNewMeal> {
                     width: 175,
                     height: 50,
                     child: DropdownButton<String>(
-                      value: mealTypeValue, // default value
+                      value: mealTypeValue,
                       hint: Text('Add Meal Type'),
                       items: mealTypes.map((String value) {
                         return DropdownMenuItem<String>(
@@ -1177,9 +1178,10 @@ class _AddNewMealState extends State<AddNewMeal> {
                       }).toList(),
                       onChanged:(String? newValue) {
                         if (newValue == 'Add for Today Only') {
-                          isDefaultMeal = false; // set the flag to false
-                        } else if (newValue == 'Add to Daily Meals') {
-                          isDefaultMeal = true; // set the flag to true
+                          isDefaultMeal = false;
+                        }
+                        else if (newValue == 'Add to Daily Meals') {
+                          isDefaultMeal = true;
                         }
                         setState(() {
                           mealTypeValue = newValue!;
@@ -1420,41 +1422,41 @@ class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
           Text('Options', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline)),
           // Labels for inputs
             Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Column(
-              spacing: 33,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Serving Size', style: TextStyle(fontSize: 17)),
-              ],
-              ),
-              SizedBox(width: 75),
-              Column(
-              spacing: 7,
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                SizedBox(
-                width: 150,
-                height: 50,
-                child: TextField(
-                  decoration: InputDecoration(
-                  border: OutlineInputBorder(),
-                  hintText: servingSize.toString().replaceAll('.0', ''),
-                  ),
-                  keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      setState(() {
-                        servingSize = double.tryParse(value) ?? 1;
-                      });
-                  },
+                Column(
+                  spacing: 33,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Serving Size', style: TextStyle(fontSize: 17)),
+                  ],
                 ),
+                SizedBox(width: 75),
+                Column(
+                spacing: 7,
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  SizedBox(
+                    width: 150,
+                    height: 50,
+                    child: TextField(
+                      decoration: InputDecoration(
+                      border: OutlineInputBorder(),
+                      hintText: servingSize.toString().replaceAll('.0', ''),
+                      ),
+                      keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          setState(() {
+                            servingSize = double.tryParse(value) ?? 1;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
               ],
-              ),
-            ],
             ),
           // Foods in meal
           Text('Foods in Meal', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline)),
@@ -1531,7 +1533,6 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // var theme = Theme.of(context);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1617,8 +1618,6 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // var theme = Theme.of(context);
-
     return ListView(
       padding: EdgeInsets.all(10),
       children: [
@@ -1688,8 +1687,6 @@ class WeightWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // var theme = Theme.of(context);
-    
     return SizedBox(
       width: 330,
       height: 50,
@@ -1707,8 +1704,6 @@ class DailyNutritionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // var theme = Theme.of(context);
-    
     return Scaffold
     (
       appBar: AppBar(title: Text('Today\'s Nutrition Facts'),),
@@ -1725,8 +1720,7 @@ class DailyNutritionFacts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // var theme = Theme.of(context);
-
+    
     return Column(
       spacing: 15,
       children: [
@@ -1773,10 +1767,6 @@ class DailyNutritionFacts extends StatelessWidget {
           fat: appState.currentDay.getFat(),
           protein: appState.currentDay.getProtein(),
         ),
-        // TODO - do a possible mean breakdown that shows what percentage each meal contributes to goals
-        // Meal Breakdowns
-        // Text('Meal Breakdowns', style: TextStyle(fontSize: 17, decoration: TextDecoration.underline,),),
-        // GridView.builder(gridDelegate: gridDelegate, itemBuilder: itemBuilder),
       ]
     );
   }
@@ -1795,37 +1785,36 @@ class _WeightGraphState extends State<WeightGraph> {
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var theme = Theme.of(context);
-
     var gridColor = theme.inputDecorationTheme.fillColor ?? Colors.black; // grid color
 
     return SizedBox(
       width: 400,
       height: 400,
       child: SfCartesianChart(
-      primaryXAxis: DateTimeAxis(
-        intervalType: DateTimeIntervalType.days,
-        dateFormat: DateFormat('MM/dd'),
-        edgeLabelPlacement: EdgeLabelPlacement.shift,
-        title: AxisTitle(text: 'Date'),
-        majorGridLines: MajorGridLines(color: gridColor),
-      ),
-      primaryYAxis: NumericAxis(
-        interval: 5,
-        labelFormat: '{value}',
-        title: AxisTitle(text: 'Weight (lbs)'),
-        minimum: appState.weightList.isNotEmpty ? appState.weightList.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 5 : 0, // minimum weight
-        majorGridLines: MajorGridLines(color: gridColor),
-      ),
-      tooltipBehavior: TooltipBehavior(enable: false),
-      series: <CartesianSeries>[
-        LineSeries<WeightData, DateTime>(
-        dataSource: appState.weightList,
-        xValueMapper: (WeightData data, _) => data.date,
-        yValueMapper: (WeightData data, _) => data.weight,
-        markerSettings: MarkerSettings(isVisible: true),
-        color: Colors.blue,
+        primaryXAxis: DateTimeAxis(
+          intervalType: DateTimeIntervalType.days,
+          dateFormat: DateFormat('MM/dd'),
+          edgeLabelPlacement: EdgeLabelPlacement.shift,
+          title: AxisTitle(text: 'Date'),
+          majorGridLines: MajorGridLines(color: gridColor),
         ),
-      ],
+        primaryYAxis: NumericAxis(
+          interval: 5,
+          labelFormat: '{value}',
+          title: AxisTitle(text: 'Weight (lbs)'),
+          minimum: appState.weightList.isNotEmpty ? appState.weightList.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 5 : 0, // minimum weight
+          majorGridLines: MajorGridLines(color: gridColor),
+        ),
+        tooltipBehavior: TooltipBehavior(enable: false),
+        series: <CartesianSeries>[
+          LineSeries<WeightData, DateTime>(
+            dataSource: appState.weightList,
+            xValueMapper: (WeightData data, _) => data.date,
+            yValueMapper: (WeightData data, _) => data.weight,
+            markerSettings: MarkerSettings(isVisible: true),
+            color: Colors.blue,
+          ),
+        ],
       ),
     );
   }
@@ -1866,7 +1855,7 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
                 itemBuilder: (context, index) {
                   return Container(
                         height: 50,
-                        color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
+                        color: theme.colorScheme.primaryContainer,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1875,13 +1864,11 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  // Text('   ${dates[index]}', style: TextStyle(fontSize: 17),),
                                   Text('   ${appState.weightList[index].date.month}/${appState.weightList[index].date.day}/${appState.weightList[index].date.year}', style: TextStyle(fontSize: 17),),
-                                    // Text('198', style: TextStyle(fontSize: 17),),
-                                    Text(
-                                      appState.weightList[index].weight.toString().replaceAll(RegExp(r'\.0$'), ''),
-                                      style: TextStyle(fontSize: 17),
-                                    ),
+                                  Text(
+                                    appState.weightList[index].weight.toString().replaceAll(RegExp(r'\.0$'), ''),
+                                    style: TextStyle(fontSize: 17),
+                                  ),
                                 ],
                               ),
                             ),
@@ -1983,7 +1970,8 @@ class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
                             final year = int.tryParse(parts[2]) ?? DateTime.now().year;
                             newWeightData.date = DateTime(year, month, day, 1);
                           }
-                        } catch (e) {
+                        }
+                        catch (e) {
                           // If parsing fails, keep the default date
                         }
                       }
@@ -2045,8 +2033,6 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // TODO - Initialize editedWeightData with the currently selected weight data
-    // var theme = Theme.of(context);
 
     return Scaffold
     (
@@ -2098,7 +2084,8 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
                             final year = int.tryParse(parts[2]) ?? appState.currentlySelectedWeight.date.year;
                             appState.updatedCurrentWeight(appState.currentlySelectedWeight.weight, DateTime(year, month, day, 1));
                           }
-                        } catch (e) {
+                        }
+                        catch (e) {
                           // If parsing fails, keep the default date
                         }
                       }
@@ -2127,18 +2114,7 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
           ),
           // Spacer
           SizedBox(height: 150,),
-          // // Save Button
-          // ElevatedButton(
-          //   style: ElevatedButton.styleFrom(
-          //     fixedSize: const Size(250, 50),
-          //     foregroundColor: theme.colorScheme.primary, // text color
-          //     side: BorderSide(width: 3, color: theme.colorScheme.primary)
-          //     ),
-          //   child: Text('Save', style: TextStyle(fontSize: 20)),
-          //   onPressed: () => {
-          //     print('finish save button for edit weight')
-          //   },
-          // ),
+          // Delete Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
@@ -2167,8 +2143,6 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // var theme = Theme.of(context);
-    
     return Column(
       spacing: 10,
       children: [
@@ -2266,27 +2240,6 @@ class SettingsPage extends StatelessWidget {
             }
           )
         ),
-        // // Other Options
-        // Container(
-        //   decoration: BoxDecoration(border: Border(bottom: BorderSide())),
-        //   child: InkWell(
-        //     child: SizedBox(
-        //       width: 350,
-        //       child: Row(
-        //         mainAxisSize: MainAxisSize.max,
-        //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        //         children: [
-        //           Text('Other Options', style: TextStyle(fontSize: 20)),
-        //           Icon(Icons.arrow_right_sharp, size: 30,),
-        //         ],
-        //       )
-        //     ),
-        //     onTap: () {
-        //       // TODO - implement other options menu
-        //       print('Other Options tapped');
-        //     }
-        //   )
-        // ),
       ]
     );
   }
@@ -2362,13 +2315,15 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
                           temp = int.tryParse(value) ?? 0;
                         }
 
-                        if (temp != 0)
+                        // check if the value is not zero
+                        if (temp > 0)
                         {
                           maxCalories = temp; // Update the max calories
                         }
                         else
                         {
-                          maxCalories = 0; // Reset to 0 if empty
+                          // if the inputted value is empty, reset to original value
+                          maxCalories = appState.defaultData.dailyCalories;
                         }
                       },
                     ),
@@ -2392,13 +2347,15 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
                           temp = int.tryParse(value) ?? 0;
                         }
 
-                        if (temp != 0)
+                        // check if the value is not zero
+                        if (temp > 0)
                         {
-                          maxCarbs = temp; // Update the max calories
+                          maxCarbs = temp; // Update the max carbs
                         }
                         else
                         {
-                          maxCarbs = 0; // Reset to 0 if empty
+                          // if the inputted value is empty, reset to original value
+                          maxCarbs = appState.defaultData.dailyCarbs;
                         }
                       },
                     ),
@@ -2422,13 +2379,15 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
                           temp = int.tryParse(value) ?? 0;
                         }
 
-                        if (temp != 0)
+                        // check if the value is not zero
+                        if (temp > 0)
                         {
                           maxFat = temp; // Update the max calories
                         }
                         else
                         {
-                          maxFat = 0; // Reset to 0 if empty
+                          // if the inputted value is empty, reset to original value
+                          maxFat = appState.defaultData.dailyFat;
                         }
                       },
                     ),
@@ -2452,13 +2411,15 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
                           temp = int.tryParse(value) ?? 0;
                         }
 
-                        if (temp != 0)
+                        // check if the value is not zero
+                        if (temp > 0)
                         {
                           maxProtein = temp; // Update the max calories
                         }
                         else
                         {
-                          maxProtein = 0; // Reset to 0 if empty
+                          // if the inputted value is empty, reset to original value
+                          maxProtein = appState.defaultData.dailyProtein;
                         }
                       },
                     ),
@@ -2503,8 +2464,7 @@ class DefaultMealsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // var theme = Theme.of(context);
-
+    
     return Scaffold
     (
       appBar: AppBar(title: Text('Default Meals'),),
@@ -2642,18 +2602,6 @@ class DefaultMealsMenu extends StatelessWidget {
           ),
           // spacer
           SizedBox(height: 150,),
-          // // Save button
-          // ElevatedButton(
-          //   style: ElevatedButton.styleFrom(
-          //     fixedSize: const Size(250, 50),
-          //     foregroundColor: theme.colorScheme.primary, // text color
-          //     side: BorderSide(width: 3, color: theme.colorScheme.primary)
-          //     ),
-          //   child: Text('Save', style: TextStyle(fontSize: 20)),
-          //   onPressed: () => {
-          //     print('finish save button for default meals')
-          //   },
-          // ),
         ]
       )
     );
@@ -2679,7 +2627,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
       (
         appBar: AppBar(
           title: Text('Saved Foods & Meals'),
-          // search or scan tabs selection
+          // tabs at the bottom of the app bar
           bottom: TabBar(
             tabs: [
               Tab(icon: Icon(Icons.search)),
@@ -2718,7 +2666,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
+                        color: theme.colorScheme.primaryContainer,
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2787,7 +2735,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
+                        color: theme.colorScheme.primaryContainer,
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2966,46 +2914,6 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
               )
             ],
           ),
-          // Text('Options', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.center,
-          //   children: [
-          //     Column(
-          //       spacing: 33,
-          //       mainAxisAlignment: MainAxisAlignment.start,
-          //       crossAxisAlignment: CrossAxisAlignment.end,
-          //       children: [
-          //         Text('Add to Meal?', style: TextStyle(fontSize: 17)),
-          //       ],
-          //     ),
-          //     // spacer
-          //     SizedBox(width: 50,),
-          //     // Input fields
-          //     Column(
-          //       spacing: 7,
-          //       mainAxisAlignment: MainAxisAlignment.start,
-          //       crossAxisAlignment: CrossAxisAlignment.end,
-          //       children: [
-          //       SizedBox(
-          //         width: 175,
-          //         height: 50,
-          //         child: DropdownButton<String>(
-          //           hint: Text('Select a Meal'),
-          //           items: <String>['No', 'Meal 1', 'Meal 2', 'Meal 3'].map((String value) {
-          //             return DropdownMenuItem<String>(
-          //               value: value,
-          //               child: Text(value),
-          //             );
-          //           }).toList(),
-          //           onChanged:(String? newValue) {
-          //             // selectedValue = newValue
-          //           },
-          //         ),
-          //       ),
-          //       ],
-          //     ),
-          //   ],
-          // ),
           // Spacer
           SizedBox(height: 75,),
           // Save Button
@@ -3050,7 +2958,6 @@ class _EditFoodMenuState extends State<EditFoodMenu> {
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var theme = Theme.of(context);
-    
     FoodData tempFoodData = appState.currentlySelectedFood.foodData;
 
     return Scaffold(
@@ -3281,35 +3188,35 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
                 ...List.generate(
                   tempUserMeal.foodInMeal.length,
                   (foodIndex) {
-                  final food = tempUserMeal.foodInMeal[foodIndex];
-                  final isAlt = foodIndex % 2 == 0;
-                  return Container(
-                    decoration: BoxDecoration(
-                    color: isAlt ? null : theme.colorScheme.primaryContainer ,
-                    ),
-                    child: InkWell(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                      Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                      Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
-                      ],
-                    ),
-                    onTap: () async {
-                      // Set the selected food in app state if needed
-                      var appState = context.read<MyAppState>();
-                      appState.currentlySelectedFood = food;
-                      // Navigate to FoodFactsForUserMeals for this user meal
-                      await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => FoodFactsForUserMeals(userMeal: tempUserMeal, foodInMeal: true,),
+                    final food = tempUserMeal.foodInMeal[foodIndex];
+                    final isAlt = foodIndex % 2 == 0;
+                    return Container(
+                      decoration: BoxDecoration(
+                        color: isAlt ? null : theme.colorScheme.primaryContainer ,
                       ),
-                      );
-                      // Refresh the UI after returning (in case food was removed)
-                      setState(() {});
-                    },
-                    ),
-                  );
+                      child: InkWell(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                          Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                          Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                          ],
+                        ),
+                        onTap: () async {
+                          // Set the selected food in app state if needed
+                          var appState = context.read<MyAppState>();
+                          appState.currentlySelectedFood = food;
+                          // Navigate to FoodFactsForUserMeals for this user meal
+                          await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => FoodFactsForUserMeals(userMeal: tempUserMeal, foodInMeal: true,),
+                          ),
+                          );
+                          // Refresh the UI after returning (in case food was removed)
+                          setState(() {});
+                        },
+                      ),
+                    );
                   }
                 ),
                 // Add button
@@ -3342,7 +3249,6 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
             },
           ),
         ]
-      
       )
     );
   }
@@ -3437,38 +3343,38 @@ class _EditUserMealState extends State<EditUserMeal> {
                 ...List.generate(
                   appState.currentlySelectedUserMeal.foodInMeal.length,
                   (foodIndex) {
-                  final food = appState.currentlySelectedUserMeal.foodInMeal[foodIndex];
-                  final isAlt = foodIndex % 2 == 0;
-                  return Container(
-                    decoration: BoxDecoration(
-                    color: isAlt ? null : theme.colorScheme.primaryContainer ,
-                    ),
-                    child: InkWell(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                      Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                      Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
-                      ],
-                    ),
-                    onTap: () async {
-                      // Set the selected food in app state if needed
-                      var appState = context.read<MyAppState>();
-                      appState.currentlySelectedFood = food;
-                      // Navigate to FoodFactsForUserMeals for this user meal
-                      await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => FoodFactsForUserMeals(
-                        userMeal: appState.currentlySelectedUserMeal,
-                        foodInMeal: true,
-                        ),
+                    final food = appState.currentlySelectedUserMeal.foodInMeal[foodIndex];
+                    final isAlt = foodIndex % 2 == 0;
+                    return Container(
+                      decoration: BoxDecoration(
+                      color: isAlt ? null : theme.colorScheme.primaryContainer ,
                       ),
-                      );
-                      // Refresh the UI after returning (in case food was removed)
-                      setState(() {});
-                    },
-                    ),
-                  );
+                      child: InkWell(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                          Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                          Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                          ],
+                        ),
+                        onTap: () async {
+                          // Set the selected food in app state if needed
+                          var appState = context.read<MyAppState>();
+                          appState.currentlySelectedFood = food;
+                          // Navigate to FoodFactsForUserMeals for this user meal
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => FoodFactsForUserMeals(
+                              userMeal: appState.currentlySelectedUserMeal,
+                              foodInMeal: true,
+                              ),
+                            ),
+                          );
+                          // Refresh the UI after returning (in case food was removed)
+                          setState(() {});
+                        },
+                      ),
+                    );
                   }
                 ),
                 // Add button
@@ -3527,6 +3433,7 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
       child: Scaffold(
         appBar: AppBar(
           title: Text('Add Food to ${widget.userMeal.name}'),
+          // Tabs at the bottom of the app bar
           bottom: TabBar(
           tabs: [
             Tab(icon: Icon(Icons.search)),
@@ -3536,85 +3443,84 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
         ),
         body: TabBarView(
           children: [
-          // Search Tab
-          Column(
-            spacing: 20,
-            children: [
-            SizedBox(height: 0),
-            // search bar
-            SizedBox(
-              width: 350,
-              height: 50,
-              child: TextField(
-              decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                hintText: 'Search',
-              ),
-              ),
-            ),
-            // list of foods
-            // Use StatefulBuilder to rebuild this part when tempUserMeal changes
-            StatefulBuilder(
-              builder: (context, setState) {
-              return SizedBox(
-                width: 370,
-                height: 570,
-                child: ListView.separated(
-                padding: const EdgeInsets.all(8),
-                itemCount: appState.foods.length,
-                itemBuilder: (context, index) {
-                  return Container(
+            // Search Tab
+            Column(
+              spacing: 20,
+              children: [
+                SizedBox(height: 0),
+                // search bar
+                SizedBox(
+                  width: 350,
                   height: 50,
-                  color: theme.colorScheme.primaryContainer,
-                  child: InkWell(
-                    child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      SizedBox(
-                      width: 330,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                        Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17)),
-                        Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17)),
-                        ],
-                      ),
-                      ),
-                    ],
-                    ),
-                    onTap: () async {
-                      // open Nutrition facts and wait for result
-                      appState.currentlySelectedFood = Food(foodData: appState.foods[index]);
-                      await Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => FoodFactsForUserMeals(userMeal: widget.userMeal, foodInMeal: false,),),
-                      );
-                      // After returning, rebuild to reflect changes in userMeal
-                      setState(() {});
-                    },
+                  child: TextField(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Search',
                   ),
-                  );
-                },
-                separatorBuilder: (context, index) => const Divider(),
+                  ),
                 ),
-              );
-              },
+                // list of foods
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    return SizedBox(
+                      width: 370,
+                      height: 570,
+                      child: ListView.separated(
+                        padding: const EdgeInsets.all(8),
+                        itemCount: appState.foods.length,
+                        itemBuilder: (context, index) {
+                          return Container(
+                            height: 50,
+                            color: theme.colorScheme.primaryContainer,
+                            child: InkWell(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  SizedBox(
+                                    width: 330,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17)),
+                                        Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17)),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () async {
+                                // open Nutrition facts and wait for result
+                                appState.currentlySelectedFood = Food(foodData: appState.foods[index]);
+                                await Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (context) => FoodFactsForUserMeals(userMeal: widget.userMeal, foodInMeal: false,),),
+                                );
+                                // After returning, rebuild to reflect changes in userMeal
+                                setState(() {});
+                              },
+                            ),
+                          );
+                        },
+                        separatorBuilder: (context, index) => const Divider(),
+                      ),
+                    );
+                  },
+                ),
+                // Create new food to database button
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: const Size(350, 50),
+                    foregroundColor: theme.colorScheme.primary,
+                    side: BorderSide(width: 3, color: theme.colorScheme.primary),
+                  ),
+                  child: Text('Create New Food', style: TextStyle(fontSize: 20)),
+                  onPressed: () {
+                    Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()));
+                  },
+                ),
+              ],
             ),
-            // Create new food to database button
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                fixedSize: const Size(350, 50),
-                foregroundColor: theme.colorScheme.primary,
-                side: BorderSide(width: 3, color: theme.colorScheme.primary),
-              ),
-              child: Text('Create New Food', style: TextStyle(fontSize: 20)),
-              onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(builder: (context) => CreateNewFoodMenu()));
-              },
-            ),
-            ],
-          ),
-          // Scan Tab
-          Placeholder(),
+            // Scan Tab
+            Placeholder(),
           ],
         ),
       )
@@ -3637,7 +3543,6 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
     var theme = Theme.of(context);
-    
     // save a duplicate of the currently selected food
     Food currentlySelectedFood = appState.currentlySelectedFood;
 
@@ -3707,7 +3612,7 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
             ],
           ),
           SizedBox(height: 75),
-            ElevatedButton(
+          ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary,
@@ -3771,8 +3676,7 @@ class _ScannerState extends State<Scanner> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // var theme = Theme.of(context);
-
+    
     return MobileScanner(
       controller: MobileScannerController(
         detectionSpeed: DetectionSpeed.noDuplicates,
@@ -3788,17 +3692,17 @@ class _ScannerState extends State<Scanner> {
         }
         else {
           appState.getFoodDataFromBarcode(scannedBarcode).then((foodData) {
-          if (foodData != null) {
-            Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => AddScannedFoodUI(scannedFoodData: foodData),
-            ),
-            );
-          }
+            if (foodData != null) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AddScannedFoodUI(scannedFoodData: foodData),
+                ),
+              );
+            }
           }).catchError((error) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error.toString())),
-          );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(error.toString())),
+            );
           });
         }
       },
@@ -4025,10 +3929,7 @@ class DayData {
     newMeal.mealName = meal.mealName;
     // Copy foods from the provided meal
     for (var food in meal.foods) {
-      newMeal.addNewFood(Food(
-        foodData: food.foodData,
-        serving: food.serving
-      ));
+      newMeal.addNewFood(Food(foodData: food.foodData, serving: food.serving));
     }
     // Add the new meal to the meals list
     meals.add(newMeal);
