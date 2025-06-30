@@ -12,19 +12,147 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  ThemeMode _themeMode = ThemeMode.light;
+  void ChangeTheme(ThemeMode themeMode) {
+    setState(() {
+      _themeMode = themeMode;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => MyAppState(),
-      child: MaterialApp(
-        title: 'Calorie Tracker',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.white)
+      child: Builder(
+        builder: (context) => MaterialApp(
+          title: 'Calorie Tracker',
+          theme: ThemeData(
+            brightness: Brightness.light,
+            colorScheme: ColorScheme.light(
+              primary: Color(0xFF4CAF50), // light green
+              primaryContainer: Color.fromARGB(255, 221, 221, 221),
+              secondary: Color(0xFF81C784), // mid green
+              surface: Colors.white,
+              onPrimary: Colors.white,
+              onSecondary: Colors.black,
+              onSurface: Colors.black,
+            ),
+            scaffoldBackgroundColor: Color(0xFFF5F5F5),
+            appBarTheme: AppBarTheme(
+              backgroundColor: Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+            ),
+            dividerColor: Color(0xFFA5D6A7),
+            tabBarTheme: TabBarThemeData(
+              labelColor: Colors.white, // selected tab text color
+              unselectedLabelColor: Colors.white70, // unselected tab text color
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(color: Colors.white, width: 2),
+              ),
+            ),
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(
+                color: Colors.black,
+              ),
+              bodyMedium: TextStyle(
+                color: Colors.black,
+              ),
+              bodySmall: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+          ),
+          darkTheme: ThemeData(
+            brightness: Brightness.dark,
+            colorScheme: ColorScheme.dark(
+              primary: Color(0xFF4CAF50),
+              primaryContainer: Color.fromARGB(255, 71, 71, 71),
+              secondary: Color(0xFF81C784),
+              surface: Color(0xFF212121), // dark grey
+              onPrimary: Color.fromARGB(255, 58, 58, 58), // white text on green for better contrast
+              onSecondary: Colors.white,
+              onSurface: Colors.white,
+            ),
+            scaffoldBackgroundColor: Color.fromARGB(255, 44, 44, 44), // even darker background
+            appBarTheme: AppBarTheme(
+              backgroundColor: Color(0xFF212121),
+              foregroundColor: Colors.white, // white text for better visibility
+              iconTheme: IconThemeData(color: Colors.white),
+              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
+              actionsIconTheme: IconThemeData(color: Colors.white),
+            ),
+            inputDecorationTheme: InputDecorationTheme(
+              filled: true,
+              fillColor: Color.fromARGB(255, 58, 58, 58),
+              border: OutlineInputBorder(),
+              hintStyle: TextStyle(color: Colors.white70),
+            ),
+            dropdownMenuTheme: DropdownMenuThemeData(
+              inputDecorationTheme: InputDecorationTheme(
+                filled: true,
+                fillColor: Color(0xFF388E3C),
+                border: OutlineInputBorder(),
+                hintStyle: TextStyle(color: Colors.white),
+              ),
+              textStyle: TextStyle(
+                color: Colors.white, // text color for dropdown items
+              ),
+            ),
+            dividerColor: Color(0xFF388E3C),
+            tabBarTheme: TabBarThemeData(
+              labelColor: Colors.white, // white selected tab text
+              unselectedLabelColor: Colors.white70,
+              indicator: UnderlineTabIndicator(
+                borderSide: BorderSide(color: Colors.white, width: 2),
+              ),
+            ),
+            textTheme: TextTheme(
+              bodyLarge: TextStyle(
+                color: Colors.white,
+              ),
+              bodyMedium: TextStyle(
+                color: Colors.white,
+              ),
+              bodySmall: TextStyle(
+                color: Colors.white,
+              ),
+            ),
+          ),
+          themeMode: _themeMode,
+          home: Stack(
+            children: [
+              HomePage(),
+              // Floating action button at the bottom right
+                Positioned(
+                top: 27,
+                right: 15,
+                child: FloatingActionButton(
+                  mini: true,
+                  tooltip: 'Toggle Light/Dark Mode',
+                  backgroundColor: Colors.transparent, // Disable background color
+                  elevation: 0, // Remove shadow
+                  child: Icon(
+                    _themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
+                      color: Colors.white, // Change icon color based on theme
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+                    });
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
-        home: HomePage()
       ),
     );
   }
@@ -82,6 +210,8 @@ class MyAppState extends ChangeNotifier {
 
   void addFoodToDatabase(FoodData food) {
     foods.add(food);
+    // Sort the foods list by name
+    foods.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     notifyListeners();
   }
 
@@ -230,7 +360,7 @@ class MyAppState extends ChangeNotifier {
     // Add the foods from the user meal to the currently selected meal
     for (var food in userMeal.foodInMeal) {
       // Create a new Food object with the specified serving size
-      Food newFood = Food(foodData: food.foodData, serving: serving);
+      Food newFood = Food(foodData: food.foodData, serving: food.serving * serving);
       // Add the new food to the currently selected meal
       currentlySelectedMeal.addNewFood(newFood);
     }
@@ -288,6 +418,8 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+    
     Widget page;
     switch (selectedPageIndex)
     {
@@ -318,7 +450,10 @@ class _HomePageState extends State<HomePage> {
               final date = DateTime.now().subtract(Duration(days: 182)).add(Duration(days: index));
               return DropdownMenuItem<DateTime>(
                 value: DateTime(date.year, date.month, date.day),
-                child: Text(DateFormat('MM/dd/yyyy').format(date)),
+                child: Text(
+                  DateFormat('MM/dd/yyyy').format(date),
+                  style: TextStyle(color: theme.textTheme.bodySmall?.color, fontSize: 15),
+                ),
               );
             }),
             onChanged: (value) {
@@ -328,9 +463,10 @@ class _HomePageState extends State<HomePage> {
                 setState(() {});
               }
             },
+            dropdownColor: theme.primaryColor, // set dropdown background color
           ),
         ),
-        backgroundColor: Colors.blueGrey
+        backgroundColor: theme.primaryColor
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem> [
@@ -345,11 +481,10 @@ class _HomePageState extends State<HomePage> {
             selectedPageIndex = value;
           });
         },
-        selectedItemColor: Colors.amber[800],
+        selectedItemColor: theme.colorScheme.primary,
       ),
     
       body: page,
-
       resizeToAvoidBottomInset: false,
     );
   }
@@ -363,6 +498,7 @@ class MealsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return ListView(
       padding: EdgeInsets.all(20),
@@ -378,12 +514,12 @@ class MealsPage extends StatelessWidget {
             Column(
             children: [
               Text(
-              'Max Calories',
-              style: TextStyle(fontSize: 15),
+                'Max Calories',
+                style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
               ),
               Text(
-              '${appState.currentDay.maxCalories}',
-              style: TextStyle(fontSize: 30),
+                '${appState.currentDay.maxCalories}',
+                style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
               ),
             ]
             ),
@@ -392,11 +528,11 @@ class MealsPage extends StatelessWidget {
             children: [
               Text(
               '',
-              style: TextStyle(fontSize: 15),
+              style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
               ),
               Text(
               '-',
-              style: TextStyle(fontSize: 30),
+              style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
               ),
             ]
             ),
@@ -405,11 +541,11 @@ class MealsPage extends StatelessWidget {
             children: [
               Text(
               'Calories Used',
-              style: TextStyle(fontSize: 15),
+              style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
               ),
               Text(
               '${appState.currentDay.getCalories()}',
-              style: TextStyle(fontSize: 30),
+              style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
               ),
             ]
             ),
@@ -417,12 +553,12 @@ class MealsPage extends StatelessWidget {
             Column(
             children: [
               Text(
-              '',
-              style: TextStyle(fontSize: 15),
+                '',
+                style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
               ),
               Text(
-              '=',
-              style: TextStyle(fontSize: 30),
+                '=',
+                style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
               ),
             ]
             ),
@@ -430,12 +566,12 @@ class MealsPage extends StatelessWidget {
             Column(
             children: [
               Text(
-              'Calories Left',
-              style: TextStyle(fontSize: 15),
+                'Calories Left',
+                style: TextStyle(fontSize: 15, color: theme.textTheme.bodyLarge?.color),
               ),
               Text(
-              '${appState.currentDay.maxCalories - appState.currentDay.getCalories()}',
-              style: TextStyle(fontSize: 30),
+                '${appState.currentDay.maxCalories - appState.currentDay.getCalories()}',
+                style: TextStyle(fontSize: 30, color: theme.textTheme.bodyLarge?.color),
               ),
             ]
             ),
@@ -460,7 +596,7 @@ class MealsPage extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: ElevatedButton(
-          child: Text('Add new meal', style: TextStyle(fontSize: 20)),
+          child: Text('Add new meal', style: TextStyle(fontSize: 20, color: theme.colorScheme.primary)),
           onPressed: () {
             Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddNewMeal()));
           }
@@ -486,9 +622,11 @@ class MealBox extends StatefulWidget {
 class _MealBoxState extends State<MealBox> {
   @override
   Widget build(BuildContext context) {
+    var theme = Theme.of(context);
+
     return Container(
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.black)
+        border: Border.all(color: theme.dividerColor)
       ),
       child: SizedBox(
         width: 350,
@@ -499,7 +637,7 @@ class _MealBoxState extends State<MealBox> {
             // Title
             Container(
               decoration: BoxDecoration(
-                color: Colors.blueGrey,
+                color: theme.colorScheme.primary,
               ),
               child: InkWell(
                 child: Row(
@@ -509,14 +647,14 @@ class _MealBoxState extends State<MealBox> {
                       spacing: 5,
                       children: [
                         // sets the meal name
-                        Text(widget.meal.mealName, style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.left),
-                        Icon(Icons.edit, color: const Color.fromARGB(255, 87, 87, 87),),
+                        Text(widget.meal.mealName, style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.left),
+                        Icon(Icons.edit, color:theme.textTheme.bodySmall?.color,),
                       ],
                     ),
                     // sets the calories for the meal
                     Text(
                       '${widget.meal.getCalories()}',
-                      style: TextStyle(fontSize: 30, color: Colors.white), textAlign: TextAlign.right
+                      style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.right
                     ),
                   ],
                 ),
@@ -532,10 +670,10 @@ class _MealBoxState extends State<MealBox> {
               widget.meal.foods.length,
               (foodIndex) {
               final food = widget.meal.foods[foodIndex];
-              final isGrey = foodIndex % 2 == 0;
+              final isAlt = foodIndex % 2 == 0;
               return Container(
                 decoration: BoxDecoration(
-                color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                color: isAlt ? null : theme.colorScheme.primaryContainer ,
                 ),
                 child: InkWell(
                 child: Row(
@@ -558,7 +696,7 @@ class _MealBoxState extends State<MealBox> {
             ),
             // Add button
             ElevatedButton(
-              child: Icon(Icons.add_box),
+              child: Icon(Icons.add_box, size:25, color: theme.colorScheme.primary,),
               onPressed: () {
                 // Set the currently selected meal in app state
                 context.read<MyAppState>().currentlySelectedMeal = widget.meal;
@@ -601,6 +739,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return DefaultTabController(
       length: 3,
@@ -642,35 +781,35 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 SizedBox(
                   width: 370,
                   height: 570,
-                  child: ListView.separated(
+                    child: ListView.separated(
                     padding: const EdgeInsets.all(8),
                     itemCount: appState.foods.length,
                     itemBuilder: (context, index) {
                       return Container(
-                        height: 50,
-                        color: const Color.fromARGB(169, 207, 207, 207),
-                        child: InkWell(
+                      height: 50,
+                      color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
+                      child: InkWell(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                          SizedBox(
+                            width: 330,
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: 330,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
-                                      Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
-                                    ],
-                                  ),
-                                ),
-                              ],
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
+                              Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
+                            ],
                             ),
-                          onTap: () {
-                            // open Nutrition facts
-                            appState.currentlySelectedFood = Food(foodData: appState.foods[index], serving: 1);
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
-                          },
+                          ),
+                          ],
                         ),
+                        onTap: () {
+                        // open Nutrition facts
+                        appState.currentlySelectedFood = Food(foodData: appState.foods[index], serving: 1);
+                        Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                        },
+                      ),
                       );
                     },
                     separatorBuilder: (context, index) => const Divider(),
@@ -679,9 +818,9 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 // Create new food to database button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    fixedSize: const Size(350, 50),
-                    foregroundColor: Colors.blueAccent, // text color
-                    side: BorderSide(width: 3, color: Colors.blueAccent)
+                      fixedSize: const Size(350, 50),
+                      foregroundColor: theme.colorScheme.primary, // text color
+                      side: BorderSide(width: 3, color: theme.colorScheme.primary)
                     ),
                   child: Text('Create New Food', style: TextStyle(fontSize: 20)),
                   onPressed: () => {
@@ -716,7 +855,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 itemBuilder: (context, index) {
                   return Container(
                   height: 50,
-                  color: const Color.fromARGB(169, 207, 207, 207),
+                  color: theme.colorScheme.onPrimary,
                   child: InkWell(
                     child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -748,8 +887,8 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                 fixedSize: const Size(350, 50),
-                foregroundColor: Colors.blueAccent, // text color
-                side: BorderSide(width: 3, color: Colors.blueAccent)
+                foregroundColor: theme.colorScheme.primary, // text color
+                side: BorderSide(width: 3, color: theme.colorScheme.primary)
                 ),
                 child: Text('Create New User Meal', style: TextStyle(fontSize: 20)),
                 onPressed: () {
@@ -773,6 +912,7 @@ class EditMealMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // var theme = Theme.of(context);
 
     return Scaffold
     (
@@ -854,8 +994,8 @@ class EditMealMenu extends StatelessWidget {
           // ElevatedButton(
           //   style: ElevatedButton.styleFrom(
           //     fixedSize: const Size(250, 50),
-          //     foregroundColor: Colors.blueAccent, // text color
-          //     side: BorderSide(width: 3, color: Colors.blueAccent)
+          //     foregroundColor: theme.colorScheme.primary, // text color
+          //     side: BorderSide(width: 3, color: theme.colorScheme.primary)
           //     ),
           //   child: Text('Save', style: TextStyle(fontSize: 20)),
           //   onPressed: () => {
@@ -866,8 +1006,8 @@ class EditMealMenu extends StatelessWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.red, // text color
-              side: BorderSide(width: 3, color: Colors.red)
+              foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
             child: Text('Remove Meal', style: TextStyle(fontSize: 20)),
             onPressed: () => {
@@ -888,6 +1028,8 @@ class RemoveMealPopUp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // var theme = Theme.of(context);
+
     return SizedBox(
       width: 300,
       height: 200,
@@ -926,6 +1068,7 @@ class TypeOfMealDeletion extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // var theme = Theme.of(context);
 
     return SizedBox(
       width: 300,
@@ -978,6 +1121,7 @@ class _AddNewMealState extends State<AddNewMeal> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
     Meal newMeal = Meal(mealName: 'Meal ${appState.currentDay.meals.length + 1}'); // default meal name
     List<String> mealTypes = ['Add for Today Only', 'Add to Daily Meals'];
     bool isDefaultMeal = false; // flag to check if the meal is a default meal
@@ -1053,8 +1197,8 @@ class _AddNewMealState extends State<AddNewMeal> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
             child: Text('Add Meal', style: TextStyle(fontSize: 20)),
             onPressed: () => {
@@ -1082,6 +1226,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold
     (
@@ -1181,8 +1326,8 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
             child: Text(
               'Add Food to Meal',
@@ -1202,8 +1347,8 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.red, // text color
-              side: BorderSide(width: 3, color: Colors.red)
+              foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
               child: Text('Remove Food', style: TextStyle(fontSize: 20)),
               onPressed: () {
@@ -1231,6 +1376,7 @@ class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('${appState.currentlySelectedUserMeal.name} Nutrition Facts')),
@@ -1322,10 +1468,10 @@ class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
                   appState.currentlySelectedUserMeal.foodInMeal.length,
                   (foodIndex) {
                     final food = appState.currentlySelectedUserMeal.foodInMeal[foodIndex];
-                    final isGrey = foodIndex % 2 == 0;
+                    final isAlt = foodIndex % 2 == 0;
                     return Container(
                       decoration: BoxDecoration(
-                        color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                      color: isAlt ? null : theme.colorScheme.primaryContainer ,
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1344,8 +1490,8 @@ class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent,
-              side: BorderSide(width: 3, color: Colors.blueAccent),
+              foregroundColor: theme.colorScheme.primary,
+              side: BorderSide(width: 3, color: theme.colorScheme.primary),
             ),
             child: Text('Add to Meal', style: TextStyle(fontSize: 20)),
             onPressed: () {
@@ -1385,6 +1531,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // var theme = Theme.of(context);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1470,6 +1617,8 @@ class ProgressPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // var theme = Theme.of(context);
+
     return ListView(
       padding: EdgeInsets.all(10),
       children: [
@@ -1539,6 +1688,8 @@ class WeightWarning extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // var theme = Theme.of(context);
+    
     return SizedBox(
       width: 330,
       height: 50,
@@ -1556,6 +1707,8 @@ class DailyNutritionMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // var theme = Theme.of(context);
+    
     return Scaffold
     (
       appBar: AppBar(title: Text('Today\'s Nutrition Facts'),),
@@ -1572,6 +1725,7 @@ class DailyNutritionFacts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // var theme = Theme.of(context);
 
     return Column(
       spacing: 15,
@@ -1640,33 +1794,38 @@ class _WeightGraphState extends State<WeightGraph> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
+
+    var gridColor = theme.inputDecorationTheme.fillColor ?? Colors.black; // grid color
 
     return SizedBox(
       width: 400,
       height: 400,
       child: SfCartesianChart(
-        primaryXAxis: DateTimeAxis(
-          intervalType: DateTimeIntervalType.days,
-          dateFormat: DateFormat('MM/dd'),
-          edgeLabelPlacement: EdgeLabelPlacement.shift,
-          title: AxisTitle(text: 'Date'),
+      primaryXAxis: DateTimeAxis(
+        intervalType: DateTimeIntervalType.days,
+        dateFormat: DateFormat('MM/dd'),
+        edgeLabelPlacement: EdgeLabelPlacement.shift,
+        title: AxisTitle(text: 'Date'),
+        majorGridLines: MajorGridLines(color: gridColor),
+      ),
+      primaryYAxis: NumericAxis(
+        interval: 5,
+        labelFormat: '{value}',
+        title: AxisTitle(text: 'Weight (lbs)'),
+        minimum: appState.weightList.isNotEmpty ? appState.weightList.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 5 : 0, // minimum weight
+        majorGridLines: MajorGridLines(color: gridColor),
+      ),
+      tooltipBehavior: TooltipBehavior(enable: false),
+      series: <CartesianSeries>[
+        LineSeries<WeightData, DateTime>(
+        dataSource: appState.weightList,
+        xValueMapper: (WeightData data, _) => data.date,
+        yValueMapper: (WeightData data, _) => data.weight,
+        markerSettings: MarkerSettings(isVisible: true),
+        color: Colors.blue,
         ),
-        primaryYAxis: NumericAxis(
-          interval: 5,
-          labelFormat: '{value}',
-          title: AxisTitle(text: 'Weight (lbs)'),
-          minimum: appState.weightList.isNotEmpty ? appState.weightList.map((e) => e.weight).reduce((a, b) => a < b ? a : b) - 5 : 0, // minimum weight
-        ),
-        tooltipBehavior: TooltipBehavior(enable: false),
-        series: <CartesianSeries>[
-          LineSeries<WeightData, DateTime>(
-            dataSource: appState.weightList,
-            xValueMapper: (WeightData data, _) => data.date,
-            yValueMapper: (WeightData data, _) => data.weight,
-            markerSettings: MarkerSettings(isVisible: true),
-            color: Colors.blue,
-          ),
-        ],
+      ],
       ),
     );
   }
@@ -1683,6 +1842,7 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold
     (
@@ -1706,7 +1866,7 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
                 itemBuilder: (context, index) {
                   return Container(
                         height: 50,
-                        color: const Color.fromARGB(169, 207, 207, 207),
+                        color: theme.colorScheme.onPrimary,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -1743,8 +1903,8 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 fixedSize: const Size(350, 50),
-                foregroundColor: Colors.blueAccent, // text color
-                side: BorderSide(width: 3, color: Colors.blueAccent)
+                foregroundColor: theme.colorScheme.primary, // text color
+                side: BorderSide(width: 3, color: theme.colorScheme.primary)
                 ),
               child: Text('Log New Weight', style: TextStyle(fontSize: 20)),
               onPressed: () => {
@@ -1771,7 +1931,8 @@ class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-
+    var theme = Theme.of(context);
+    
     return Scaffold
     (
       appBar: AppBar(title: Text('Log New Weight'),),
@@ -1855,8 +2016,8 @@ class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
@@ -1884,7 +2045,8 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    // Initialize editedWeightData with the currently selected weight data
+    // TODO - Initialize editedWeightData with the currently selected weight data
+    // var theme = Theme.of(context);
 
     return Scaffold
     (
@@ -1969,8 +2131,8 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
           // ElevatedButton(
           //   style: ElevatedButton.styleFrom(
           //     fixedSize: const Size(250, 50),
-          //     foregroundColor: Colors.blueAccent, // text color
-          //     side: BorderSide(width: 3, color: Colors.blueAccent)
+          //     foregroundColor: theme.colorScheme.primary, // text color
+          //     side: BorderSide(width: 3, color: theme.colorScheme.primary)
           //     ),
           //   child: Text('Save', style: TextStyle(fontSize: 20)),
           //   onPressed: () => {
@@ -1980,8 +2142,8 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.red, // text color
-              side: BorderSide(width: 3, color: Colors.red)
+              foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
             child: Text('Delete', style: TextStyle(fontSize: 20)),
             onPressed: () => {
@@ -2005,6 +2167,8 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // var theme = Theme.of(context);
+    
     return Column(
       spacing: 10,
       children: [
@@ -2022,8 +2186,7 @@ class SettingsPage extends StatelessWidget {
         ),
         // Spacer
         SizedBox(height: 10,),
-        // Option 1
-        // NOTE: only option 1 needs the top and bottom borders, all other should only have a bottom border
+        // Calories and Macros Goals
         Container(
           decoration: BoxDecoration(border: Border(bottom: BorderSide())),
           child: InkWell(
@@ -2043,7 +2206,7 @@ class SettingsPage extends StatelessWidget {
             }
           )
         ),
-        // Option 2
+        // Default Meals
         Container(
           decoration: BoxDecoration(border: Border(bottom: BorderSide())),
           child: InkWell(
@@ -2063,7 +2226,7 @@ class SettingsPage extends StatelessWidget {
             }
           )
         ),
-        // Option 3
+        // Saved Foods & Meals
         Container(
           decoration: BoxDecoration(border: Border(bottom: BorderSide())),
           child: InkWell(
@@ -2103,6 +2266,27 @@ class SettingsPage extends StatelessWidget {
             }
           )
         ),
+        // // Other Options
+        // Container(
+        //   decoration: BoxDecoration(border: Border(bottom: BorderSide())),
+        //   child: InkWell(
+        //     child: SizedBox(
+        //       width: 350,
+        //       child: Row(
+        //         mainAxisSize: MainAxisSize.max,
+        //         mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        //         children: [
+        //           Text('Other Options', style: TextStyle(fontSize: 20)),
+        //           Icon(Icons.arrow_right_sharp, size: 30,),
+        //         ],
+        //       )
+        //     ),
+        //     onTap: () {
+        //       // TODO - implement other options menu
+        //       print('Other Options tapped');
+        //     }
+        //   )
+        // ),
       ]
     );
   }
@@ -2120,6 +2304,8 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
+    
     int maxCalories = appState.defaultData.dailyCalories;
     int maxCarbs = appState.defaultData.dailyCarbs;
     int maxFat = appState.defaultData.dailyFat;
@@ -2293,8 +2479,8 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
@@ -2317,6 +2503,7 @@ class DefaultMealsMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // var theme = Theme.of(context);
 
     return Scaffold
     (
@@ -2459,8 +2646,8 @@ class DefaultMealsMenu extends StatelessWidget {
           // ElevatedButton(
           //   style: ElevatedButton.styleFrom(
           //     fixedSize: const Size(250, 50),
-          //     foregroundColor: Colors.blueAccent, // text color
-          //     side: BorderSide(width: 3, color: Colors.blueAccent)
+          //     foregroundColor: theme.colorScheme.primary, // text color
+          //     side: BorderSide(width: 3, color: theme.colorScheme.primary)
           //     ),
           //   child: Text('Save', style: TextStyle(fontSize: 20)),
           //   onPressed: () => {
@@ -2484,6 +2671,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return DefaultTabController(
       length: 3,
@@ -2530,7 +2718,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: const Color.fromARGB(169, 207, 207, 207),
+                        color: theme.colorScheme.onPrimary,
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2562,8 +2750,8 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(350, 50),
-                    foregroundColor: Colors.blueAccent, // text color
-                    side: BorderSide(width: 3, color: Colors.blueAccent)
+                    foregroundColor: theme.colorScheme.primary, // text color
+                    side: BorderSide(width: 3, color: theme.colorScheme.primary)
                     ),
                   child: Text('Create New Food', style: TextStyle(fontSize: 20)),
                   onPressed: () {
@@ -2599,7 +2787,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: const Color.fromARGB(169, 207, 207, 207),
+                        color: theme.colorScheme.onPrimary,
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2631,8 +2819,8 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     fixedSize: const Size(350, 50),
-                    foregroundColor: Colors.blueAccent, // text color
-                    side: BorderSide(width: 3, color: Colors.blueAccent)
+                    foregroundColor: theme.colorScheme.primary, // text color
+                    side: BorderSide(width: 3, color: theme.colorScheme.primary)
                     ),
                   child: Text('Create Saved Meal', style: TextStyle(fontSize: 20)),
                   onPressed: () {
@@ -2664,6 +2852,7 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('Create a New Food'),),
@@ -2823,8 +3012,8 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () {
@@ -2860,6 +3049,8 @@ class _EditFoodMenuState extends State<EditFoodMenu> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
+    
     FoodData tempFoodData = appState.currentlySelectedFood.foodData;
 
     return Scaffold(
@@ -2984,8 +3175,8 @@ class _EditFoodMenuState extends State<EditFoodMenu> {
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   fixedSize: const Size(250, 50),
-                  foregroundColor: Colors.blueAccent, // text color
-                  side: BorderSide(width: 3, color: Colors.blueAccent)
+                  foregroundColor: theme.colorScheme.primary, // text color
+                  side: BorderSide(width: 3, color: theme.colorScheme.primary)
                   ),
                 child: Text('Save', style: TextStyle(fontSize: 20)),
                 onPressed: () => {
@@ -3015,6 +3206,7 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('Create Saved Meal'),),
@@ -3090,10 +3282,10 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
                   tempUserMeal.foodInMeal.length,
                   (foodIndex) {
                   final food = tempUserMeal.foodInMeal[foodIndex];
-                  final isGrey = foodIndex % 2 == 0;
+                  final isAlt = foodIndex % 2 == 0;
                   return Container(
                     decoration: BoxDecoration(
-                    color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                    color: isAlt ? null : theme.colorScheme.primaryContainer ,
                     ),
                     child: InkWell(
                     child: Row(
@@ -3138,8 +3330,8 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () {
@@ -3167,6 +3359,7 @@ class _EditUserMealState extends State<EditUserMeal> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('Edit Meal'),),
@@ -3245,10 +3438,10 @@ class _EditUserMealState extends State<EditUserMeal> {
                   appState.currentlySelectedUserMeal.foodInMeal.length,
                   (foodIndex) {
                   final food = appState.currentlySelectedUserMeal.foodInMeal[foodIndex];
-                  final isGrey = foodIndex % 2 == 0;
+                  final isAlt = foodIndex % 2 == 0;
                   return Container(
                     decoration: BoxDecoration(
-                    color: isGrey ? const Color.fromARGB(255, 219, 219, 219) : null,
+                    color: isAlt ? null : theme.colorScheme.primaryContainer ,
                     ),
                     child: InkWell(
                     child: Row(
@@ -3296,8 +3489,8 @@ class _EditUserMealState extends State<EditUserMeal> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.red, // text color
-              side: BorderSide(width: 3, color: Colors.red)
+              foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
             child: Text('Delete Meal', style: TextStyle(fontSize: 20)),
             onPressed: () {
@@ -3327,6 +3520,7 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return DefaultTabController(
       length: 2,
@@ -3371,7 +3565,7 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
                 itemBuilder: (context, index) {
                   return Container(
                   height: 50,
-                  color: const Color.fromARGB(169, 207, 207, 207),
+                  color: theme.colorScheme.onPrimary,
                   child: InkWell(
                     child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3409,8 +3603,8 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 fixedSize: const Size(350, 50),
-                foregroundColor: Colors.blueAccent,
-                side: BorderSide(width: 3, color: Colors.blueAccent),
+                foregroundColor: theme.colorScheme.primary,
+                side: BorderSide(width: 3, color: theme.colorScheme.primary),
               ),
               child: Text('Create New Food', style: TextStyle(fontSize: 20)),
               onPressed: () {
@@ -3442,6 +3636,8 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
+    
     // save a duplicate of the currently selected food
     Food currentlySelectedFood = appState.currentlySelectedFood;
 
@@ -3514,8 +3710,8 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
             ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(350, 50),
-              foregroundColor: Colors.blueAccent,
-              side: BorderSide(width: 3, color: Colors.blueAccent),
+              foregroundColor: theme.colorScheme.primary,
+              side: BorderSide(width: 3, color: theme.colorScheme.primary),
             ),
             child: Text(
                 widget.foodInMeal ? 'Save' : 'Add to ${widget.userMeal.name}',
@@ -3548,8 +3744,8 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 fixedSize: const Size(350, 50),
-                foregroundColor: Colors.red, // text color
-                side: BorderSide(width: 3, color: Colors.red)
+                foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+                side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
               child: Text('Remove from Meal', style: TextStyle(fontSize: 20)),
               onPressed: () {
@@ -3575,6 +3771,7 @@ class _ScannerState extends State<Scanner> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    // var theme = Theme.of(context);
 
     return MobileScanner(
       controller: MobileScannerController(
@@ -3637,6 +3834,7 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
+    var theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(title: Text('Add Scanned Food'),),
@@ -3751,8 +3949,8 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
-              foregroundColor: Colors.blueAccent, // text color
-              side: BorderSide(width: 3, color: Colors.blueAccent)
+              foregroundColor: theme.colorScheme.primary, // text color
+              side: BorderSide(width: 3, color: theme.colorScheme.primary)
             ),
             child: Text('Save Food', style: TextStyle(fontSize: 20)),
             onPressed: () {
