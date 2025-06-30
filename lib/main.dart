@@ -742,6 +742,9 @@ class AddFoodMenu extends StatefulWidget {
 }
 
 class _AddFoodMenuState extends State<AddFoodMenu>{
+  List<Food> searchResults = [];
+  bool isSearchActive = false;
+
   @override
   void initState() {
     super.initState();
@@ -790,12 +793,30 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 SizedBox(
                   width: 350,
                   height: 50,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      // TODO - Finish search bar
-                      hintText: 'Search',
+                  child: SearchBar(
+                    elevation: WidgetStateProperty.all(0),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
+                    hintText: 'Search Foods',
+                    onChanged: (query) {
+                      // Perform search and update searchResults
+                      if (query.isNotEmpty) {
+                        searchResults = appState.foods
+                          .where((food) => food.name.toLowerCase().contains(query.toLowerCase()))
+                          .map((food) => Food(foodData: food, serving: 1))
+                          .toList();
+                        isSearchActive = true; // Set search active when query is not empty
+                        setState(() {});
+                      }
+                      if (query.isEmpty) {
+                        searchResults.clear(); // Clear search results if query is empty
+                        isSearchActive = false; // Set search inactive when query is empty
+                        setState(() {});
+                      }
+                    },
                   ),
                 ),
                 // list of foods
@@ -804,8 +825,54 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                   height: 570,
                     child: ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    itemCount: appState.foods.length,
+                    itemCount: isSearchActive
+                      ? (searchResults.isEmpty ? 1 : searchResults.length)
+                      : appState.foods.length,
                     itemBuilder: (context, index) {
+                      // If there are search results, display them instead of all foods
+                      if (isSearchActive) {
+                        if (searchResults.length == 0) {
+                          return Container(
+                            height: 50,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'No results found',
+                              style: TextStyle(fontSize: 17, color: theme.textTheme.bodyMedium?.color),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        else {
+                          // Use the search result instead of the original food
+                          return Container(
+                            height: 50,
+                            color: theme.colorScheme.primaryContainer,
+                            child: InkWell(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  SizedBox(
+                                    width: 330,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('   ${searchResults[index].foodData.name}', style: TextStyle(fontSize: 17),),
+                                        Text('${searchResults[index].foodData.calories}', style: TextStyle(fontSize: 17),),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                // open Nutrition facts
+                                appState.currentlySelectedFood = searchResults[index];
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                              },
+                            ),
+                          );
+                        }
+                      }
+                      // If no search results, display all foods
                       return Container(
                         height: 50,
                         color: theme.colorScheme.primaryContainer,
