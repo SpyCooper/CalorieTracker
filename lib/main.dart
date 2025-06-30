@@ -742,9 +742,10 @@ class AddFoodMenu extends StatefulWidget {
 }
 
 class _AddFoodMenuState extends State<AddFoodMenu>{
-  List<Food> searchResults = [];
-  bool isSearchActive = false;
-
+  List<Food> foodSearchResults = []; // List to hold search results
+  List<UserMeal> userMealSearchResults = []; // List to hold user meal search results
+  bool isSearchActive = false; // Track if search is active
+  
   @override
   void initState() {
     super.initState();
@@ -778,10 +779,17 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
               Tab(icon: Icon(Icons.search)),
               Tab(icon: Icon(Icons.dining)),
               Tab(icon: Icon(Icons.barcode_reader)),
-            ]
+            ],
+            // when a tab is selected, it will reset the search results
+            onTap: (index) {
+              // Reset search results when switching tabs
+              foodSearchResults.clear();
+              userMealSearchResults.clear();
+              isSearchActive = false; // Reset search active state
+              setState(() {});
+            }
           ),
         ),
-
         body: TabBarView(
           children: [
             // Search Tab
@@ -802,9 +810,9 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                     ),
                     hintText: 'Search Foods',
                     onChanged: (query) {
-                      // Perform search and update searchResults
+                      // Perform search and update foodSearchResults
                       if (query.isNotEmpty) {
-                        searchResults = appState.foods
+                        foodSearchResults = appState.foods
                           .where((food) => food.name.toLowerCase().contains(query.toLowerCase()))
                           .map((food) => Food(foodData: food, serving: 1))
                           .toList();
@@ -812,7 +820,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                         setState(() {});
                       }
                       if (query.isEmpty) {
-                        searchResults.clear(); // Clear search results if query is empty
+                        foodSearchResults.clear(); // Clear search results if query is empty
                         isSearchActive = false; // Set search inactive when query is empty
                         setState(() {});
                       }
@@ -826,12 +834,12 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                     child: ListView.separated(
                     padding: const EdgeInsets.all(8),
                     itemCount: isSearchActive
-                      ? (searchResults.isEmpty ? 1 : searchResults.length)
+                      ? (foodSearchResults.isEmpty ? 1 : foodSearchResults.length)
                       : appState.foods.length,
                     itemBuilder: (context, index) {
                       // If there are search results, display them instead of all foods
                       if (isSearchActive) {
-                        if (searchResults.length == 0) {
+                        if (foodSearchResults.length == 0) {
                           return Container(
                             height: 50,
                             alignment: Alignment.center,
@@ -856,8 +864,8 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                                     child: Row(
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text('   ${searchResults[index].foodData.name}', style: TextStyle(fontSize: 17),),
-                                        Text('${searchResults[index].foodData.calories}', style: TextStyle(fontSize: 17),),
+                                        Text('   ${foodSearchResults[index].foodData.name}', style: TextStyle(fontSize: 17),),
+                                        Text('${foodSearchResults[index].foodData.calories}', style: TextStyle(fontSize: 17),),
                                       ],
                                     ),
                                   ),
@@ -865,7 +873,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                               ),
                               onTap: () {
                                 // open Nutrition facts
-                                appState.currentlySelectedFood = searchResults[index];
+                                appState.currentlySelectedFood = foodSearchResults[index];
                                 Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                               },
                             ),
@@ -926,11 +934,29 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 SizedBox(
                   width: 350,
                   height: 50,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: 'Search Meals',
+                  child: SearchBar(
+                    elevation: WidgetStateProperty.all(0),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
+                    hintText: 'Search Foods',
+                    onChanged: (query) {
+                      // Perform search and update userMealSearchResults
+                      if (query.isNotEmpty) {
+                        userMealSearchResults = appState.userMeals
+                          .where((userMeal) => userMeal.name.toLowerCase().contains(query.toLowerCase()))
+                          .toList();
+                        isSearchActive = true; // Set search active when query is not empty
+                        setState(() {});
+                      }
+                      if (query.isEmpty) {
+                        userMealSearchResults.clear(); // Clear search results if query is empty
+                        isSearchActive = false; // Set search inactive when query is empty
+                        setState(() {});
+                      }
+                    },
                   ),
                 ),
                 // list of user meals
@@ -939,8 +965,54 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                   height: 570,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    itemCount: appState.userMeals.length,
+                    itemCount: isSearchActive
+                      ? (userMealSearchResults.isEmpty ? 1 : userMealSearchResults.length)
+                      : appState.userMeals.length,
                     itemBuilder: (context, index) {
+                      // If there are search results, display them instead of all user meals
+                      if (isSearchActive) {
+                        if (userMealSearchResults.length == 0) {
+                          return Container(
+                            height: 50,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'No results found',
+                              style: TextStyle(fontSize: 17, color: theme.textTheme.bodyMedium?.color),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        else {
+                          // Use the search result instead of the original user meals
+                          return Container(
+                            height: 50,
+                            color: theme.colorScheme.primaryContainer,
+                            child: InkWell(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  SizedBox(
+                                    width: 330,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('   ${userMealSearchResults[index].name}', style: TextStyle(fontSize: 17),),
+                                        Text('${userMealSearchResults[index].getCalories()}', style: TextStyle(fontSize: 17),),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                // open Nutrition facts
+                                appState.currentlySelectedUserMeal = userMealSearchResults[index];
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserMealNutritionFacts()));
+                              },
+                            ),
+                          );
+                        }
+                      }
+                      // If no search results, display all user meals
                       return Container(
                         height: 50,
                         color: theme.colorScheme.primaryContainer,
@@ -948,13 +1020,13 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                                SizedBox(
+                              SizedBox(
                                 width: 330,
                                 child: Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                  Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
-                                  Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
+                                    Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
+                                    Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
                                   ],
                                 ),
                               ),
@@ -987,7 +1059,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
             ),
             // Scan Tab
             Scanner(),
-          ]
+          ],
         )
       ),
     );
@@ -2687,6 +2759,10 @@ class SavedFoodsMenu extends StatefulWidget {
 }
 
 class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
+  List<Food> foodSearchResults = []; // List to hold search results
+  List<UserMeal> userMealSearchResults = []; // List to hold user meal search results
+  bool isSearchActive = false; // Track if search is active
+  
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
@@ -2704,7 +2780,15 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
               Tab(icon: Icon(Icons.search)),
               Tab(icon: Icon(Icons.dining)),
               Tab(icon: Icon(Icons.barcode_reader)),
-            ]
+            ],
+            // when a tab is selected, it will reset the search results
+            onTap: (index) {
+              // Reset search results when switching tabs
+              foodSearchResults.clear();
+              userMealSearchResults.clear();
+              isSearchActive = false; // Reset search active state
+              setState(() {});
+            }
           ),
         ),
 
@@ -2719,50 +2803,114 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                 SizedBox(
                   width: 350,
                   height: 50,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      // TODO - finish the search bar
-                      hintText: 'Search Foods',
+                  child: SearchBar(
+                    elevation: WidgetStateProperty.all(0),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
+                    hintText: 'Search Foods',
+                    onChanged: (query) {
+                      // Perform search and update foodSearchResults
+                      if (query.isNotEmpty) {
+                        foodSearchResults = appState.foods
+                          .where((food) => food.name.toLowerCase().contains(query.toLowerCase()))
+                          .map((food) => Food(foodData: food, serving: 1))
+                          .toList();
+                        isSearchActive = true; // Set search active when query is not empty
+                        setState(() {});
+                      }
+                      if (query.isEmpty) {
+                        foodSearchResults.clear(); // Clear search results if query is empty
+                        isSearchActive = false; // Set search inactive when query is empty
+                        setState(() {});
+                      }
+                    },
                   ),
                 ),
                 // list of foods
                 SizedBox(
                   width: 370,
                   height: 570,
-                  child: ListView.separated(
+                    child: ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    itemCount: appState.foods.length,
+                    itemCount: isSearchActive
+                      ? (foodSearchResults.isEmpty ? 1 : foodSearchResults.length)
+                      : appState.foods.length,
                     itemBuilder: (context, index) {
+                      // If there are search results, display them instead of all foods
+                      if (isSearchActive) {
+                        if (foodSearchResults.length == 0) {
+                          return Container(
+                            height: 50,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'No results found',
+                              style: TextStyle(fontSize: 17, color: theme.textTheme.bodyMedium?.color),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        else {
+                          // Use the search result instead of the original food
+                          return Container(
+                            height: 50,
+                            color: theme.colorScheme.primaryContainer,
+                            child: InkWell(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  SizedBox(
+                                    width: 330,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('   ${foodSearchResults[index].foodData.name}', style: TextStyle(fontSize: 17),),
+                                        Text('${foodSearchResults[index].foodData.calories}', style: TextStyle(fontSize: 17),),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () {
+                                // open Nutrition facts
+                                appState.currentlySelectedFood = foodSearchResults[index];
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
+                              },
+                            ),
+                          );
+                        }
+                      }
+                      // If no search results, display all foods
                       return Container(
                         height: 50,
                         color: theme.colorScheme.primaryContainer,
                         child: InkWell(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: 330,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
-                                      Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
-                                    ],
-                                  ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              SizedBox(
+                                width: 330,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('   ${appState.foods[index].name}', style: TextStyle(fontSize: 17),),
+                                    Text('${appState.foods[index].calories}', style: TextStyle(fontSize: 17),),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
                           onTap: () {
                             // open Nutrition facts
-                            appState.currentlySelectedFood = Food(foodData: appState.foods[index]);
-                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditFoodMenu()));
+                            appState.currentlySelectedFood = Food(foodData: appState.foods[index], serving: 1);
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                           },
                         ),
                       );
                     },
-                    separatorBuilder: (context, index) => const Divider(),
+                    separatorBuilder: (context, index) => Divider(color: theme.colorScheme.onSurface,),
                   ),
                 ),
                 // Create new food to database button
@@ -2785,53 +2933,117 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
               children: [
                 SizedBox(height: 0,),
                 // search bar
+                // search bar
                 SizedBox(
                   width: 350,
                   height: 50,
-                  child: TextField(
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      // TODO - finish the search bar
-                      hintText: 'Search Meals',
+                  child: SearchBar(
+                    elevation: WidgetStateProperty.all(0),
+                    shape: WidgetStateProperty.all(
+                      RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
+                    hintText: 'Search Foods',
+                    onChanged: (query) {
+                      // Perform search and update userMealSearchResults
+                      if (query.isNotEmpty) {
+                        userMealSearchResults = appState.userMeals
+                          .where((userMeal) => userMeal.name.toLowerCase().contains(query.toLowerCase()))
+                          .toList();
+                        isSearchActive = true; // Set search active when query is not empty
+                        setState(() {});
+                      }
+                      if (query.isEmpty) {
+                        userMealSearchResults.clear(); // Clear search results if query is empty
+                        isSearchActive = false; // Set search inactive when query is empty
+                        setState(() {});
+                      }
+                    },
                   ),
                 ),
-                // list of foods
+                // list of user meals
                 SizedBox(
                   width: 370,
                   height: 570,
                   child: ListView.separated(
                     padding: const EdgeInsets.all(8),
-                    itemCount: appState.userMeals.length,
+                    itemCount: isSearchActive
+                      ? (userMealSearchResults.isEmpty ? 1 : userMealSearchResults.length)
+                      : appState.userMeals.length,
                     itemBuilder: (context, index) {
+                      // If there are search results, display them instead of all user meals
+                      if (isSearchActive) {
+                        if (userMealSearchResults.length == 0) {
+                          return Container(
+                            height: 50,
+                            alignment: Alignment.center,
+                            child: Text(
+                              'No results found',
+                              style: TextStyle(fontSize: 17, color: theme.textTheme.bodyMedium?.color),
+                              textAlign: TextAlign.center,
+                            ),
+                          );
+                        }
+                        else {
+                          // Use the search result instead of the original user meals
+                          return Container(
+                            height: 50,
+                            color: theme.colorScheme.primaryContainer,
+                            child: InkWell(
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  SizedBox(
+                                    width: 330,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('   ${userMealSearchResults[index].name}', style: TextStyle(fontSize: 17),),
+                                        Text('${userMealSearchResults[index].getCalories()}', style: TextStyle(fontSize: 17),),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              onTap: () { 
+                                // open Nutrition facts
+                                appState.currentlySelectedUserMeal = userMealSearchResults[index];
+                                Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserMealNutritionFacts()));
+                              },
+                            ),
+                          );
+                        }
+                      }
+                      // If no search results, display all user meals
                       return Container(
                         height: 50,
                         color: theme.colorScheme.primaryContainer,
                         child: InkWell(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: 330,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
-                                      Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
-                                    ],
-                                  ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              SizedBox(
+                                width: 330,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text('   ${appState.userMeals[index].name}', style: TextStyle(fontSize: 17),),
+                                    Text('${appState.userMeals[index].getCalories()}', style: TextStyle(fontSize: 17),),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
+                          ),
                           onTap: () {
-                            // Open the meal details
+                            // open Nutrition facts
                             appState.currentlySelectedUserMeal = appState.userMeals[index];
-                            Navigator.of(context).push(MaterialPageRoute( builder: (context) => EditUserMeal()));
+                            Navigator.of(context).push(MaterialPageRoute(builder: (context) => UserMealNutritionFacts()));
                           },
                         ),
                       );
                     },
-                    separatorBuilder: (context, index) => const Divider(),
+                    separatorBuilder: (context, index) => Divider(color: theme.colorScheme.onSurface,),
                   ),
                 ),
                 // Create new food to database button
