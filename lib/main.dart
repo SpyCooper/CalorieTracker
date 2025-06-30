@@ -812,7 +812,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                       ),
                       );
                     },
-                    separatorBuilder: (context, index) => const Divider(),
+                    separatorBuilder: (context, index) => Divider(color: theme.colorScheme.onSurface,),
                   ),
                 ),
                 // Create new food to database button
@@ -855,7 +855,7 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
                 itemBuilder: (context, index) {
                   return Container(
                   height: 50,
-                  color: theme.colorScheme.onPrimary,
+                  color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
                   child: InkWell(
                     child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1866,7 +1866,7 @@ class _WeightLogMenuState extends State<WeightLogMenu> {
                 itemBuilder: (context, index) {
                   return Container(
                         height: 50,
-                        color: theme.colorScheme.onPrimary,
+                        color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -2718,7 +2718,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: theme.colorScheme.onPrimary,
+                        color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -2787,7 +2787,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
                     itemBuilder: (context, index) {
                       return Container(
                         height: 50,
-                        color: theme.colorScheme.onPrimary,
+                        color: theme.colorScheme.primaryContainer, // Changed from onPrimary to primaryContainer for better theming
                         child: InkWell(
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -3565,7 +3565,7 @@ class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
                 itemBuilder: (context, index) {
                   return Container(
                   height: 50,
-                  color: theme.colorScheme.onPrimary,
+                  color: theme.colorScheme.primaryContainer,
                   child: InkWell(
                     child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
