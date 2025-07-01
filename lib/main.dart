@@ -9,151 +9,160 @@ import 'package:openfoodfacts/openfoodfacts.dart';
 
 void main() {
   // TODO - create the current date and time if it is not already set
-  runApp(const MyApp());
+  runApp(const Start());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class Start extends StatefulWidget {
+  const Start({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<Start> createState() => _StartState();
 }
 
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.light;
-  void ChangeTheme(ThemeMode themeMode) {
-    setState(() {
-      _themeMode = themeMode;
-    });
-  }
-
+class _StartState extends State<Start> {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => MyAppState(),
-      child: Builder(
-        builder: (context) => MaterialApp(
-          title: 'Calorie Tracker',
-          theme: ThemeData(
-            brightness: Brightness.light,
-            colorScheme: ColorScheme.light(
-              primary: Color(0xFF4CAF50), // light green
-              primaryContainer: Color.fromARGB(255, 221, 221, 221),
-              secondary: Color(0xFF81C784), // mid green
-              surface: Colors.white,
-              onPrimary: Colors.white,
-              onSecondary: Colors.black,
-              onSurface: Colors.black,
+      create: (context) => CurrentAppState(),
+      child: App(),
+    );
+  }
+}
+
+class App extends StatefulWidget {
+  const App({super.key});
+
+  @override
+  State<App> createState() => _AppState();
+}
+
+class _AppState extends State<App> {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<CurrentAppState>();
+    bool isDarkMode = appState.themeMode == ThemeMode.dark;
+
+    return Builder(
+      builder: (context) => MaterialApp(
+        title: 'Calorie Tracker',
+        theme: ThemeData(
+          brightness: Brightness.light,
+          colorScheme: ColorScheme.light(
+            primary: Color(0xFF4CAF50), // light green
+            primaryContainer: Color.fromARGB(255, 221, 221, 221),
+            secondary: Color(0xFF81C784), // mid green
+            surface: Colors.white,
+            onPrimary: Colors.white,
+            onSecondary: Colors.black,
+            onSurface: Colors.black,
+          ),
+          scaffoldBackgroundColor: Color(0xFFF5F5F5),
+          appBarTheme: AppBarTheme(
+            backgroundColor: Color(0xFF4CAF50),
+            foregroundColor: Colors.white,
+          ),
+          dividerColor: Color(0xFFA5D6A7),
+          tabBarTheme: TabBarThemeData(
+            labelColor: Colors.white, // selected tab text color
+            unselectedLabelColor: Colors.white70, // unselected tab text color
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(color: Colors.white, width: 2),
             ),
-            scaffoldBackgroundColor: Color(0xFFF5F5F5),
-            appBarTheme: AppBarTheme(
-              backgroundColor: Color(0xFF4CAF50),
-              foregroundColor: Colors.white,
+            dividerColor: Colors.transparent, // divider color for tabs
+          ),
+          textTheme: TextTheme(
+            bodyLarge: TextStyle(
+              color: Colors.black,
             ),
-            dividerColor: Color(0xFFA5D6A7),
-            tabBarTheme: TabBarThemeData(
-              labelColor: Colors.white, // selected tab text color
-              unselectedLabelColor: Colors.white70, // unselected tab text color
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(color: Colors.white, width: 2),
-              ),
-              dividerColor: Colors.transparent, // divider color for tabs
+            bodyMedium: TextStyle(
+              color: Colors.black,
             ),
-            textTheme: TextTheme(
-              bodyLarge: TextStyle(
-                color: Colors.black,
-              ),
-              bodyMedium: TextStyle(
-                color: Colors.black,
-              ),
-              bodySmall: TextStyle(
-                color: Colors.white,
-              ),
+            bodySmall: TextStyle(
+              color: Colors.white,
             ),
           ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-            colorScheme: ColorScheme.dark(
-              primary: Color(0xFF4CAF50),
-              primaryContainer: Color.fromARGB(255, 71, 71, 71),
-              secondary: Color(0xFF81C784),
-              surface: Color(0xFF212121), // dark grey
-              onPrimary: Color.fromARGB(255, 58, 58, 58), // white text on green for better contrast
-              onSecondary: Colors.white,
-              onSurface: Colors.white,
-            ),
-            scaffoldBackgroundColor: Color.fromARGB(255, 44, 44, 44), // even darker background
-            appBarTheme: AppBarTheme(
-              backgroundColor: Color(0xFF212121),
-              foregroundColor: Colors.white, // white text for better visibility
-              iconTheme: IconThemeData(color: Colors.white),
-              titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
-              actionsIconTheme: IconThemeData(color: Colors.white),
-            ),
+        ),
+        darkTheme: ThemeData(
+          brightness: Brightness.dark,
+          colorScheme: ColorScheme.dark(
+            primary: Color(0xFF4CAF50),
+            primaryContainer: Color.fromARGB(255, 71, 71, 71),
+            secondary: Color(0xFF81C784),
+            surface: Color(0xFF212121), // dark grey
+            onPrimary: Color.fromARGB(255, 58, 58, 58), // white text on green for better contrast
+            onSecondary: Colors.white,
+            onSurface: Colors.white,
+          ),
+          scaffoldBackgroundColor: Color.fromARGB(255, 44, 44, 44), // even darker background
+          appBarTheme: AppBarTheme(
+            backgroundColor: Color(0xFF212121),
+            foregroundColor: Colors.white, // white text for better visibility
+            iconTheme: IconThemeData(color: Colors.white),
+            titleTextStyle: TextStyle(color: Colors.white, fontSize: 20),
+            actionsIconTheme: IconThemeData(color: Colors.white),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Color.fromARGB(255, 58, 58, 58),
+            border: OutlineInputBorder(),
+            hintStyle: TextStyle(color: Colors.white70),
+          ),
+          dropdownMenuTheme: DropdownMenuThemeData(
             inputDecorationTheme: InputDecorationTheme(
               filled: true,
-              fillColor: Color.fromARGB(255, 58, 58, 58),
+              fillColor: Color(0xFF388E3C),
               border: OutlineInputBorder(),
-              hintStyle: TextStyle(color: Colors.white70),
+              hintStyle: TextStyle(color: Colors.white),
             ),
-            dropdownMenuTheme: DropdownMenuThemeData(
-              inputDecorationTheme: InputDecorationTheme(
-                filled: true,
-                fillColor: Color(0xFF388E3C),
-                border: OutlineInputBorder(),
-                hintStyle: TextStyle(color: Colors.white),
-              ),
-              textStyle: TextStyle(
-                color: Colors.white, // text color for dropdown items
-              ),
-            ),
-            dividerColor: Color(0xFF388E3C),
-            tabBarTheme: TabBarThemeData(
-              labelColor: Colors.white, // white selected tab text
-              unselectedLabelColor: Colors.white70,
-              indicator: UnderlineTabIndicator(
-                borderSide: BorderSide(color: Colors.white, width: 2),
-              ),
-              dividerColor: Colors.transparent, // divider color for tabs
-            ),
-            textTheme: TextTheme(
-              bodyLarge: TextStyle(
-                color: Colors.white,
-              ),
-              bodyMedium: TextStyle(
-                color: Colors.white,
-              ),
-              bodySmall: TextStyle(
-                color: Colors.white,
-              ),
+            textStyle: TextStyle(
+              color: Colors.white, // text color for dropdown items
             ),
           ),
-          themeMode: _themeMode,
-          home: Stack(
-            children: [
-              HomePage(),
-              // Floating action button to toggle light/dark mode
-              Positioned(
-                top: 27,
-                right: 15,
-                child: FloatingActionButton(
-                  mini: true,
-                  tooltip: 'Toggle Light/Dark Mode',
-                  backgroundColor: Colors.transparent, // Disable background color
-                  elevation: 0, // Remove shadow
-                  child: Icon(
-                    _themeMode == ThemeMode.dark ? Icons.dark_mode : Icons.light_mode,
-                      color: Colors.white, // Change icon color based on theme
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _themeMode = _themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
-                    });
-                  },
+          dividerColor: Color(0xFF388E3C),
+          tabBarTheme: TabBarThemeData(
+            labelColor: Colors.white, // white selected tab text
+            unselectedLabelColor: Colors.white70,
+            indicator: UnderlineTabIndicator(
+              borderSide: BorderSide(color: Colors.white, width: 2),
+            ),
+            dividerColor: Colors.transparent, // divider color for tabs
+          ),
+          textTheme: TextTheme(
+            bodyLarge: TextStyle(
+              color: Colors.white,
+            ),
+            bodyMedium: TextStyle(
+              color: Colors.white,
+            ),
+            bodySmall: TextStyle(
+              color: Colors.white,
+            ),
+          ),
+        ),
+        themeMode: appState.themeMode, // Use the theme mode from app state
+        home: Stack(
+          children: [
+            HomePage(),
+            // Floating action button to toggle light/dark mode
+            Positioned(
+              top: 27,
+              right: 15,
+              child: FloatingActionButton(
+                mini: true,
+                tooltip: 'Toggle Light/Dark Mode',
+                backgroundColor: Colors.transparent, // Disable background color
+                elevation: 0, // Remove shadow
+                child: Icon(
+                  isDarkMode ? Icons.dark_mode : Icons.light_mode, // Change icon based on theme
+                    color: Colors.white, // Change icon color based on theme
                 ),
+                onPressed: () {
+                  // Toggle the theme mode
+                  appState.ChangeTheme(!isDarkMode);
+                },
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -161,7 +170,7 @@ class _MyAppState extends State<MyApp> {
 }
 
 // Current state of the app
-class MyAppState extends ChangeNotifier {
+class CurrentAppState extends ChangeNotifier {
   // TODO - move these to a database
   // List of all the days
   List<DayData> days = [];
@@ -172,6 +181,15 @@ class MyAppState extends ChangeNotifier {
   // weight list
   List<WeightData> weightList= [];
   WeightData currentlySelectedWeight = WeightData();
+
+  //-----------------------------
+  ThemeMode themeMode = ThemeMode.light;
+  void ChangeTheme(bool isDarkMode) {
+    // Change the theme mode based on the isDarkMode flag
+    themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    notifyListeners();
+  }
+  // ----------------------------
 
   // default data
   DefaultData defaultData = DefaultData();
@@ -185,7 +203,7 @@ class MyAppState extends ChangeNotifier {
   bool isAddFoodMenuOpen = false;
 
   // constructor
-  MyAppState() {
+  CurrentAppState() {
     currentDay = DayData(defaultData);
     days.add(currentDay);
   }
@@ -457,7 +475,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Get the current app state
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
 
     return Scaffold(
       appBar: AppBar(
@@ -518,7 +536,7 @@ class MealsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return ListView(
@@ -686,7 +704,7 @@ class _MealBoxState extends State<MealBox> {
                 ),
                 onTap: () {
                   // Set the currently selected meal in app state
-                  context.read<MyAppState>().currentlySelectedMeal = widget.meal;
+                  context.read<CurrentAppState>().currentlySelectedMeal = widget.meal;
                   Navigator.of(context).push(MaterialPageRoute(builder: (context) => EditMealMenu()));
                 }
               )
@@ -711,9 +729,9 @@ class _MealBoxState extends State<MealBox> {
                     ),
                     onTap: () {
                       // Set the selected food in app state if needed
-                      context.read<MyAppState>().currentlySelectedFood = food;
+                      context.read<CurrentAppState>().currentlySelectedFood = food;
                       // Set the currently selected meal in app state
-                      context.read<MyAppState>().currentlySelectedMeal = widget.meal;
+                      context.read<CurrentAppState>().currentlySelectedMeal = widget.meal;
                       Navigator.of(context).push(MaterialPageRoute(builder: (context) => FoodNutritionFacts()));
                     }
                   ),
@@ -725,7 +743,7 @@ class _MealBoxState extends State<MealBox> {
               child: Icon(Icons.add_box, size:25, color: theme.colorScheme.primary,),
               onPressed: () {
                 // Set the currently selected meal in app state
-                context.read<MyAppState>().currentlySelectedMeal = widget.meal;
+                context.read<CurrentAppState>().currentlySelectedMeal = widget.meal;
                 Navigator.of(context).push(MaterialPageRoute(builder: (context) => AddFoodMenu()));
               }
             ),
@@ -753,20 +771,20 @@ class _AddFoodMenuState extends State<AddFoodMenu>{
     super.initState();
     // Set isAddFoodMenuOpen to true when the menu is opened
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<MyAppState>().isAddFoodMenuOpen = true;
+      context.read<CurrentAppState>().isAddFoodMenuOpen = true;
     });
   }
 
   @override
   void deactivate() {
     // Set isAddFoodMenuOpen to false when the menu is closed
-    context.read<MyAppState>().isAddFoodMenuOpen = false;
+    context.read<CurrentAppState>().isAddFoodMenuOpen = false;
     super.deactivate();
   }
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return DefaultTabController(
@@ -1073,7 +1091,7 @@ class EditMealMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     
     return Scaffold
     (
@@ -1217,7 +1235,7 @@ class TypeOfMealDeletion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
 
     return SizedBox(
       width: 300,
@@ -1269,7 +1287,7 @@ class _AddNewMealState extends State<AddNewMeal> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
     Meal newMeal = Meal(mealName: 'Meal ${appState.currentDay.meals.length + 1}'); // default meal name
     List<String> mealTypes = ['Add for Today Only', 'Add to Daily Meals'];
@@ -1379,7 +1397,7 @@ class FoodNutritionFacts extends StatefulWidget {
 class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold
@@ -1477,7 +1495,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           // Spacer
           SizedBox(height: 25,),
           // Save Button
-          if (context.read<MyAppState>().isAddFoodMenuOpen)
+          if (context.read<CurrentAppState>().isAddFoodMenuOpen)
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
@@ -1490,7 +1508,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
             ),
             onPressed: () {
               // if the user is coming from the AddFoodMenu, add the food to the meal
-              if (context.read<MyAppState>().isAddFoodMenuOpen) {
+              if (context.read<CurrentAppState>().isAddFoodMenuOpen) {
                 appState.addNewFoodToMeal(appState.currentlySelectedMeal, appState.currentlySelectedFood);
                 Navigator.of(context).pop(); // Close the nutrition facts page
               } 
@@ -1498,7 +1516,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           ),
           // Remove button
           // Only show if not coming from AddFoodMenu (i.e., currentlySelectedMeal is not empty)
-          if (!context.read<MyAppState>().isAddFoodMenuOpen)
+          if (!context.read<CurrentAppState>().isAddFoodMenuOpen)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
               fixedSize: const Size(250, 50),
@@ -1530,7 +1548,7 @@ class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold(
@@ -1701,7 +1719,7 @@ class _MacroBreakdownState extends State<MacroBreakdown> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -1903,7 +1921,7 @@ class DailyNutritionFacts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     
     return Column(
       spacing: 15,
@@ -1967,7 +1985,7 @@ class WeightGraph extends StatefulWidget {
 class _WeightGraphState extends State<WeightGraph> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
     var gridColor = theme.inputDecorationTheme.fillColor ?? Colors.black; // grid color
 
@@ -2014,7 +2032,7 @@ class WeightLogMenu extends StatefulWidget {
 class _WeightLogMenuState extends State<WeightLogMenu> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold
@@ -2101,7 +2119,7 @@ class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
     
     return Scaffold
@@ -2219,7 +2237,7 @@ class EditWeightMenu extends StatefulWidget {
 class _EditWeightMenuState extends State<EditWeightMenu> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
 
     return Scaffold
     (
@@ -2443,7 +2461,7 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
     
     int maxCalories = appState.defaultData.dailyCalories;
@@ -2650,7 +2668,7 @@ class DefaultMealsMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     
     return Scaffold
     (
@@ -2812,7 +2830,7 @@ class _SavedFoodsMenuState extends State<SavedFoodsMenu> {
   
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return DefaultTabController(
@@ -3129,7 +3147,7 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold(
@@ -3286,7 +3304,7 @@ class EditFoodMenu extends StatefulWidget {
 class _EditFoodMenuState extends State<EditFoodMenu> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
     FoodData tempFoodData = appState.currentlySelectedFood.foodData;
 
@@ -3443,7 +3461,7 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold(
@@ -3538,7 +3556,7 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
                               ),
                               onTap: () async {
                                 // Set the selected food in app state if needed
-                                var appState = context.read<MyAppState>();
+                                var appState = context.read<CurrentAppState>();
                                 appState.currentlySelectedFood = food;
                                 // Navigate to FoodFactsForUserMeals for this user meal
                                 await Navigator.of(context).push(
@@ -3601,7 +3619,7 @@ class EditUserMeal extends StatefulWidget {
 class _EditUserMealState extends State<EditUserMeal> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold(
@@ -3699,7 +3717,7 @@ class _EditUserMealState extends State<EditUserMeal> {
                               ),
                               onTap: () async {
                                 // Set the selected food in app state if needed
-                                var appState = context.read<MyAppState>();
+                                var appState = context.read<CurrentAppState>();
                                 appState.currentlySelectedFood = food;
                                 // Navigate to FoodFactsForUserMeals for this user meal
                                 await Navigator.of(context).push(
@@ -3768,7 +3786,7 @@ class AddFoodToUserMeal extends StatefulWidget {
 class _AddFoodToUserMealState extends State<AddFoodToUserMeal> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return DefaultTabController(
@@ -3884,7 +3902,7 @@ class FoodFactsForUserMeals extends StatefulWidget {
 class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
     // save a duplicate of the currently selected food
     Food currentlySelectedFood = appState.currentlySelectedFood;
@@ -4018,7 +4036,7 @@ class Scanner extends StatefulWidget {
 class _ScannerState extends State<Scanner> {
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     
     return MobileScanner(
       controller: MobileScannerController(
@@ -4080,7 +4098,7 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
 
   @override
   Widget build(BuildContext context) {
-    var appState = context.watch<MyAppState>();
+    var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
 
     return Scaffold(
