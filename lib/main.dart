@@ -5,9 +5,12 @@ import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:intl/intl.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:openfoodfacts/openfoodfacts.dart';
+import 'dart:async';
+import 'package:flutter/widgets.dart';
+import 'package:path/path.dart' as path;
+import 'package:sqflite/sqflite.dart';
 
-
-void main() {
+void main() async{
   // TODO - create the current date and time if it is not already set
   runApp(const Start());
 }
@@ -171,7 +174,7 @@ class _AppState extends State<App> {
 
 // Current state of the app
 class CurrentAppState extends ChangeNotifier {
-  // TODO - move these to a database
+  // NOTE - these are updated with the database for slightly better performance
   // List of all the days
   List<DayData> days = [];
   // contains all the foods in the database
@@ -181,6 +184,11 @@ class CurrentAppState extends ChangeNotifier {
   // weight list
   List<WeightData> weightList= [];
   WeightData currentlySelectedWeight = WeightData();
+
+  // Database instance and IDs
+  var database;
+  int nextFoodID = 0; // ID for the next food to be added
+  int nextUserMealID = 0; // ID for the next user meal to be added
 
   //-----------------------------
   ThemeMode themeMode = ThemeMode.light;
@@ -204,8 +212,47 @@ class CurrentAppState extends ChangeNotifier {
 
   // constructor
   CurrentAppState() {
+    // Initialize the database
+    initializeDatabase();
     currentDay = DayData(defaultData);
     days.add(currentDay);
+  }
+
+  //Initialize the database
+  Future<void> initializeDatabase() async {
+    // Get the path to the database
+    database = await openDatabase(
+      path.join(await getDatabasesPath(), 'calorie_tracker.db'),
+      onCreate: (db, version) async {
+        // Create the foodData table
+        await db.execute(
+          'CREATE TABLE foodData(id INTEGER PRIMARY KEY, name TEXT, calories INTEGER, carbs INTEGER, fat INTEGER, protein INTEGER)'
+        );
+        // Create the userMeals table
+        await db.execute(
+          'CREATE TABLE userMeals(id INTEGER PRIMARY KEY, name TEXT, foodInMeal TEXT)'
+        );
+      },
+      version: 1,
+    );
+
+    // load in the foods from the database
+    foods = await getFoodsFromDatabase();
+    // set the next food ID based on the last food in the database
+    if (foods.isNotEmpty) {
+      nextFoodID = foods.last.id + 1; // Increment the last food ID
+    } else {
+      nextFoodID = 0; // Start from 0 if no foods exist
+    }
+
+    // load in the user meals from the database
+    userMeals = await getUserMealsFromDatabase();
+    // set the next user meal ID based on the last user meal in the database
+    if (userMeals.isNotEmpty) {
+      nextUserMealID = userMeals.last.id + 1; // Increment the last user meal ID
+    } else {
+      nextUserMealID = 0; // Start from 0 if no user meals exist
+    }
   }
 
   // change the current day to a specific date
@@ -227,10 +274,82 @@ class CurrentAppState extends ChangeNotifier {
   }
 
   // Add a new food to the database
-  void addFoodToDatabase(FoodData food) {
-    foods.add(food);
-    // Sort the foods list by name
-    foods.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+  Future<void> addFoodToDatabase(FoodData food) async {
+    // Set the food's id to the nextFoodID before inserting
+    food.id = nextFoodID;
+
+    // Insert the food into the database
+    await database.insert(
+      'foodData',
+      food.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // Add the food to the foods list
+    nextFoodID++;
+
+    // Match the foods list to the database
+    matchFoodsToDatabase();
+  }
+
+  // Fetch all foods from the database
+  Future<List<FoodData>> getFoodsFromDatabase() async {
+    // Query the database for all foods
+    final List<Map<String, dynamic>> maps = await database.query('foodData');
+
+    // If the database is empty, return an empty list
+    if (maps.isEmpty) {
+      return [];
+    }
+
+    // Convert the maps to FoodData objects and add them to the foods list
+    return [
+      for (final {'id': id, 'name': name, 'calories': calories, 'carbs': carbs, 'fat': fat, 'protein': protein} in maps)
+        FoodData(
+          id: id,
+          name: name,
+          calories: calories,
+          carbs: carbs,
+          fat: fat,
+          protein: protein,
+        ),
+    ];
+  }
+
+  // Delete a food from the database
+  Future<void> deleteFoodFromDatabase(FoodData food) async {
+    // Delete the food from the database
+    await database.delete(
+      'foodData',
+      where: 'id = ?',
+      whereArgs: [food.id],
+    );
+
+    // Match the foods list to the database
+    matchFoodsToDatabase();
+  }
+  
+  // Clears all data in the database
+  // Used for testing purposes
+  Future<void> clearDatabase() async {
+    // Clear the foodData table
+    await database.delete('foodData');
+    // Reset the foods list
+    foods.clear();
+    nextFoodID = 0; // Reset the nextFoodID
+    
+    // Clear the userMeals table
+    await database.delete('userMeals');
+    // Reset the userMeals list
+    userMeals.clear();
+    nextUserMealID = 0; // Reset the nextUserMealID
+
+    notifyListeners();
+  }
+
+  void matchFoodsToDatabase() async{
+    // reset the foods list
+    foods = await getFoodsFromDatabase();
     notifyListeners();
   }
 
@@ -341,8 +460,18 @@ class CurrentAppState extends ChangeNotifier {
   }
 
   // Update the currently selected food's data
-  void updateCurrentlySelectedFoodData(FoodData foodData) {
-    currentlySelectedFood.foodData = foodData;
+  Future<void> updateCurrentlySelectedFoodData(FoodData foodData) async {
+    // currentlySelectedFood.foodData = foodData;
+    await database.update(
+      'foodData',
+      foodData.toMap(),
+      where: 'id = ?',
+      whereArgs: [currentlySelectedFood.foodData.id],
+    );
+
+    // Match the foods list to the database
+    matchFoodsToDatabase();
+
     notifyListeners();
   }
 
@@ -360,8 +489,62 @@ class CurrentAppState extends ChangeNotifier {
   }
 
   // Add a new user meal to the list of user meals
-  void addNewUserMeal(UserMeal userMeal) {
-    userMeals.add(userMeal);
+  Future<void> addNewUserMeal(UserMeal userMeal) async{
+    // Set the ID for the new user meal
+    userMeal.id = nextUserMealID;
+
+    // Add the user meal to database
+    database.insert(
+      'userMeals',
+      userMeal.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    nextUserMealID++;
+    matchUserMealsToDatabase();
+  }
+
+  // Fetch all user meals from the database
+  Future<List<UserMeal>> getUserMealsFromDatabase() async {
+    // Query the database for all user meals
+    final List<Map<String, dynamic>> maps = await database.query('userMeals');
+
+    // If the database is empty, return an empty list
+    if (maps.isEmpty) {
+      return [];
+    }
+
+    // Convert the maps to UserMeal objects and add them to the userMeals list
+    return [
+      for (final {'id': id, 'name': name, 'foodInMeal': foodInMeal} in maps)
+        UserMeal(
+          id: id,
+            name: name,
+            foodInMeal: (foodInMeal as List)
+              .map((food) {
+              // Find the matching FoodData in the database by id
+              final dbFood = foods.firstWhere(
+                (f) => f.id == (food['id'] ?? food['foodData']?['id']),
+                orElse: () => FoodData(
+                  id: nextFoodID++,
+                  name: food['name'] ?? 'Unknown Food',
+                  calories: food['calories'] ?? 0,
+                  carbs: food['carbs'] ?? 0,
+                  fat: food['fat'] ?? 0,
+                  protein: food['protein'] ?? 0,
+                ),
+              );
+              return Food(foodData: dbFood);
+              })
+              .toList(),
+        ),
+    ];
+  }
+
+  // Match the user meals list to the database
+  void matchUserMealsToDatabase() async {
+    // reset the user meals list
+    userMeals = await getUserMealsFromDatabase();
     notifyListeners();
   }
 
@@ -4347,9 +4530,11 @@ class Meal {
 
 class UserMeal {
   List<Food> foodInMeal = [];
-  String name = "User Meal";
+  String name;
+  int id; // Unique identifier for the user meal
 
-  UserMeal({this.name = "User Meal"});
+  UserMeal({this.name = "User Meal", this.id = 0, 
+    List<Food>? foodInMeal}) : foodInMeal = foodInMeal ?? [];
 
   void addFood(Food food) {
     // Check if the food already exists in the meal
@@ -4395,6 +4580,21 @@ class UserMeal {
       }
     }
   }
+
+  // Convert UserMeal to a map for database storage
+  Map<String, Object> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      // Convert foodInMeal to a string representation for storage
+      'foodInMeal': foodInMeal.map((food) => food.foodData.toMap()).toList(),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'UserMeal{id: $id, name: $name, foodInMeal: $foodInMeal}';
+  }
 }
 
 class Food {
@@ -4430,6 +4630,7 @@ class Food {
 }
 
 class FoodData {
+  int id; // Unique identifier for the food
   String name;
   int calories;
   int protein;
@@ -4437,12 +4638,30 @@ class FoodData {
   int carbs;
 
   FoodData({
+    this.id = 0,
     this.name = "Unnamed Food",
     this.calories = 0,
     this.protein = 0,
     this.fat = 0,
     this.carbs = 0
   });
+
+  // Convert FoodData to a map for database storage
+  Map<String, Object> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'calories': calories,
+      'protein': protein,
+      'fat': fat,
+      'carbs': carbs,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'FoodData{id: $id, name: $name, calories: $calories, protein: $protein, fat: $fat, carbs: $carbs}';
+  }
 }
 
 class WeightData {
@@ -4458,3 +4677,6 @@ class DefaultData {
 
   List<String> meals = ['Breakfast', 'Lunch', 'Dinner'];
 }
+
+
+// ================================= DATA PERSISTENCE =================================
