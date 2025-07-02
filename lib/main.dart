@@ -189,8 +189,11 @@ class CurrentAppState extends ChangeNotifier {
   var database;
   int nextFoodID = 0; // ID for the next food to be added
   int nextUserMealID = 0; // ID for the next user meal to be added
+  int nextWeightID = 0; // ID for the next weight entry to be added
 
   //-----------------------------
+  // default data
+  DefaultData defaultData = DefaultData();
   ThemeMode themeMode = ThemeMode.light;
   void ChangeTheme(bool isDarkMode) {
     // Change the theme mode based on the isDarkMode flag
@@ -199,8 +202,6 @@ class CurrentAppState extends ChangeNotifier {
   }
   // ----------------------------
 
-  // default data
-  DefaultData defaultData = DefaultData();
   // current day data
   late DayData currentDay;
   // currently selected things
@@ -223,18 +224,26 @@ class CurrentAppState extends ChangeNotifier {
     // Get the path to the database
     database = await openDatabase(
       path.join(await getDatabasesPath(), 'calorie_tracker.db'),
-      onCreate: (db, version) async {
+      onCreate: (database, version) async {
         // Create the foodData table
-        await db.execute(
-          'CREATE TABLE foodData(id INTEGER PRIMARY KEY, name TEXT, calories INTEGER, carbs INTEGER, fat INTEGER, protein INTEGER)'
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS foodData(id INTEGER PRIMARY KEY, name TEXT, calories INTEGER, carbs INTEGER, fat INTEGER, protein INTEGER)'
         );
         // Create the userMeals table
-        await db.execute(
-          'CREATE TABLE userMeals(id INTEGER PRIMARY KEY, name TEXT, foodInMeal TEXT)'
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS userMeals(id INTEGER PRIMARY KEY, name TEXT, foodInMeal TEXT)'
         );
+        // Create the weightData table
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS weightData(id INTEGER PRIMARY KEY, weight TEXT, date TEXT)'
+        );
+        // Create the defaultData table
       },
       version: 1,
     );
+
+    // DEBUG - clear the database
+    // await clearDatabase();
 
     // load in the foods from the database
     foods = await getFoodsFromDatabase();
@@ -252,6 +261,15 @@ class CurrentAppState extends ChangeNotifier {
       nextUserMealID = userMeals.last.id + 1; // Increment the last user meal ID
     } else {
       nextUserMealID = 0; // Start from 0 if no user meals exist
+    }
+
+    // load in the weights from the database
+    weightList = await getWeightsFromDatabase();
+    // set the next weight ID based on the last weight in the database
+    if (weightList.isNotEmpty) {
+      nextWeightID = weightList.last.id + 1; // Increment the last weight ID
+    } else {
+      nextWeightID = 0; // Start from 0 if no weights exist
     }
   }
 
@@ -344,12 +362,26 @@ class CurrentAppState extends ChangeNotifier {
     userMeals.clear();
     nextUserMealID = 0; // Reset the nextUserMealID
 
+    // Clear the weightData table
+    await database.delete('weightData');
+    // Reset the weightList
+    weightList.clear();
+    nextWeightID = 0; // Reset the nextWeightID
+
     notifyListeners();
   }
 
   void matchFoodsToDatabase() async{
     // reset the foods list
     foods = await getFoodsFromDatabase();
+    // sort the foods list by name
+    foods.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    // reset the nextFoodID
+    if (foods.isNotEmpty) {
+      nextFoodID = foods.last.id + 1; // Increment the last food ID
+    } else {
+      nextFoodID = 0; // Start from 0 if no foods exist
+    }
     notifyListeners();
   }
 
@@ -418,26 +450,94 @@ class CurrentAppState extends ChangeNotifier {
   }
 
   // Add a new weight to the list of weights
-  void addWeight(WeightData weight) {
-    // Add a new weight entry to the weight list
-    weightList.add(weight);
-    // Sort the weight list by date
+  Future<void> addNewWeight(WeightData weight) async {
+    // Set the ID for the new weight
+    weight.id = nextWeightID;
+
+    // Add the weight to the database
+    await database.insert(
+      'weightData',
+      weight.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // Increment the next weight ID
+    nextWeightID++;
+    
+    matchWeightsToDatabase();
+  }
+
+  // Fetch all weights from the database
+  Future<List<WeightData>> getWeightsFromDatabase() async {
+    // Query the database for all weights
+    final List<Map<String, dynamic>> maps = await database.query('weightData');
+
+    // If the database is empty, return an empty list
+    if (maps.isEmpty) {
+      return [];
+    }
+
+    // Convert the maps to WeightData objects and add them to the weightList
+    return [
+      for (final {'id': id, 'weight': weight, 'date': date} in maps)
+        WeightData(
+            id: id,
+            weight: double.tryParse(weight as String) ?? 0.0, // Ensure weight is parsed correctly
+            date: DateTime.parse(date as String) // Ensure date is parsed correctly
+        ),
+    ];
+  }
+
+  // Match the weight list to the database
+  void matchWeightsToDatabase() async {
+    // reset the weight list
+    weightList = await getWeightsFromDatabase();
+    // sort the weight list by date
     weightList.sort((a, b) => a.date.compareTo(b.date));
+    // reset the last selected weight
+    if (weightList.isNotEmpty) {
+      currentlySelectedWeight = weightList.last; // Set the last weight as the currently selected weight
+    } else {
+      currentlySelectedWeight = WeightData(); // Reset to a default empty weight
+    }
     notifyListeners();
   }
 
   // Update the currently selected weight
-  void updatedCurrentWeight(double weight, DateTime date) {
+  Future<void> updatedCurrentWeight(double weight, DateTime date) async{
+    // Update the currently selected weight's data
     currentlySelectedWeight.weight = weight;
     currentlySelectedWeight.date = date;
-    // sort the weight list by date
-    weightList.sort((a, b) => a.date.compareTo(b.date));
+
+    // Update the weight in the database
+    database.update(
+      'weightData',
+      currentlySelectedWeight.toMap(),
+      where: 'id = ?',
+      whereArgs: [currentlySelectedWeight.id],
+    );
+
+    // Match the weights list to the database
+    matchWeightsToDatabase();
+    
     notifyListeners();
   }
 
   // Remove a weight entry from the list of weigths
-  void removeWeight(WeightData weight) {
+  Future<void> removeWeight(WeightData weight) async {
+    // Remove the weight from the database
+    database.delete(
+      'weightData',
+      where: 'id = ?',
+      whereArgs: [weight.id],
+    );
+
+    // Remove the weight from the weight list
     weightList.remove(weight);
+
+    // Match the weights list to the database
+    matchWeightsToDatabase();
+
     notifyListeners();
   }
 
@@ -519,24 +619,30 @@ class CurrentAppState extends ChangeNotifier {
       for (final {'id': id, 'name': name, 'foodInMeal': foodInMeal} in maps)
         UserMeal(
           id: id,
-            name: name,
-            foodInMeal: (foodInMeal as List)
-              .map((food) {
+          name: name,
+          foodInMeal: (foodInMeal as String).split(',').map((foodEntry) {
+            final parts = foodEntry.split(':');
+            if (parts.length == 2) {
+              final foodId = int.tryParse(parts[0]) ?? -1;
+              final serving = double.tryParse(parts[1]) ?? 1.0;
+
               // Find the matching FoodData in the database by id
               final dbFood = foods.firstWhere(
-                (f) => f.id == (food['id'] ?? food['foodData']?['id']),
+                (f) => f.id == foodId,
                 orElse: () => FoodData(
                   id: nextFoodID++,
-                  name: food['name'] ?? 'Unknown Food',
-                  calories: food['calories'] ?? 0,
-                  carbs: food['carbs'] ?? 0,
-                  fat: food['fat'] ?? 0,
-                  protein: food['protein'] ?? 0,
+                  name: 'Unknown Food',
+                  calories: 0,
+                  carbs: 0,
+                  fat: 0,
+                  protein: 0,
                 ),
               );
-              return Food(foodData: dbFood);
-              })
-              .toList(),
+
+              return Food(foodData: dbFood, serving: serving);
+            }
+            return Food(foodData: FoodData(), serving: 1.0);
+          }).toList(),
         ),
     ];
   }
@@ -545,26 +651,55 @@ class CurrentAppState extends ChangeNotifier {
   void matchUserMealsToDatabase() async {
     // reset the user meals list
     userMeals = await getUserMealsFromDatabase();
+    // sort the user meals list by name
+    userMeals.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+    // reset the nextUserMealID
+    if (userMeals.isNotEmpty) {
+      nextUserMealID = userMeals.last.id + 1; // Increment the last user meal ID
+    } else {
+      nextUserMealID = 0; // Start from 0 if no user meals exist
+    }
     notifyListeners();
   }
 
   // Update the currently selected user meal
-  void updateCurrentlySelectedUserMealData(UserMeal userMeal) {
-    currentlySelectedUserMeal.name = userMeal.name;
-    currentlySelectedUserMeal.foodInMeal = userMeal.foodInMeal;
-    notifyListeners();
-  }
-
-  // Remove a user meal from the list of user meals
-  void removeUserMeal(UserMeal userMeal) {
-    userMeals.remove(userMeal);
-    notifyListeners();
+  Future<void> updateCurrentlySelectedUserMealData(UserMeal userMeal) async {
+    // Update the user meal in the database
+    await database.update(
+      'userMeals',
+      userMeal.toMap(),
+      where: 'id = ?',
+      whereArgs: [userMeal.id],
+    );
+    // Match the user meals list to the database
+    matchUserMealsToDatabase();
   }
 
   // Update the name of the currently selected user meal
-  void updateCurrentlySelectedUserMealName(String newName) {
-    currentlySelectedUserMeal.name = newName;
-    notifyListeners();
+  Future<void> updateCurrentlySelectedUserMealName(String newName) async {
+    // Update the user meal in the database
+    await database.update(
+      'userMeals',
+      currentlySelectedUserMeal.toMap(),
+      where: 'id = ?',
+      whereArgs: [currentlySelectedUserMeal.id],
+    );
+
+    // Match the user meals list to the database
+    matchUserMealsToDatabase();
+  }
+
+  // Remove a user meal from the database
+  Future<void> deleteUserMeal(UserMeal userMeal) async {
+    // Remove the user meal from the database
+    await database.delete(
+      'userMeals',
+      where: 'id = ?',
+      whereArgs: [userMeal.id],
+    );
+
+    // Match the user meals list to the database
+    matchUserMealsToDatabase();
   }
 
   // Add a user meal to the currently selected meal with a specified serving size
@@ -2398,7 +2533,7 @@ class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
             child: Text('Save', style: TextStyle(fontSize: 20)),
             onPressed: () => {
               // Add the new weight data to the weight list in app state
-              appState.addWeight(newWeightData),
+              appState.addNewWeight(newWeightData),
               // Pop back to the weight log menu
               Navigator.of(context).pop(),
             },
@@ -3942,7 +4077,7 @@ class _EditUserMealState extends State<EditUserMeal> {
                   child: Text('Delete Meal', style: TextStyle(fontSize: 20)),
                   onPressed: () {
                     // Delete the user meal from the list
-                    appState.removeUserMeal(appState.currentlySelectedUserMeal);
+                    appState.deleteUserMeal(appState.currentlySelectedUserMeal);
                     // Navigate back to the saved foods menu and reset the tempData
                     Navigator.of(context).pop();
                   },
@@ -4087,8 +4222,6 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
   Widget build(BuildContext context) {
     var appState = context.watch<CurrentAppState>();
     var theme = Theme.of(context);
-    // save a duplicate of the currently selected food
-    Food currentlySelectedFood = appState.currentlySelectedFood;
 
     return Scaffold(
       appBar: AppBar(
@@ -4167,23 +4300,9 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
               style: TextStyle(fontSize: 20),
             ),
             onPressed: () {
-              if (widget.foodInMeal) {
-                // find the instance of food that was selected in the meal
-                int foodIndex = widget.userMeal.foodInMeal.indexWhere((food) => food.foodData == currentlySelectedFood.foodData);
-                // If the food is already in the meal, update it
-                if (foodIndex != -1) {
-                  // Update the serving size of the food in the meal
-                  widget.userMeal.foodInMeal[foodIndex].serving = appState.currentlySelectedFood.serving;
-                }
-                else {
-                  // If the food is not in the meal, add it
-                  widget.userMeal.addFood(appState.currentlySelectedFood);
-                }
-              }
-              else {
-                // If the food is not in the meal, add it
-                widget.userMeal.addFood(appState.currentlySelectedFood);
-              }
+              // add the food to the user meal
+              widget.userMeal.addFood(appState.currentlySelectedFood);
+              appState.updateCurrentlySelectedUserMealData(widget.userMeal);
               
               Navigator.of(context).pop();
             },
@@ -4586,8 +4705,7 @@ class UserMeal {
     return {
       'id': id,
       'name': name,
-      // Convert foodInMeal to a string representation for storage
-      'foodInMeal': foodInMeal.map((food) => food.foodData.toMap()).toList(),
+      'foodInMeal': foodInMeal.map((food) => '${food.foodData.id}:${food.serving}').join(','),
     };
   }
 
@@ -4665,8 +4783,25 @@ class FoodData {
 }
 
 class WeightData {
-  DateTime date = DateTime.now();
-  double weight = 160; // Default weight
+  int id; // Unique identifier for the weight data
+  DateTime date;
+  double weight; // Default weight
+
+  WeightData({this.id = 0, DateTime? date, this.weight = 160}) : date = date ?? DateTime.now();
+
+  // Convert WeightData to a map for database storage
+  Map<String, Object> toMap() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'weight': weight,
+    };
+  }
+
+  @override
+  String toString() {
+    return 'WeightData{id: $id, date: ${date.toIso8601String()}, weight: $weight}';
+  }
 }
 
 class DefaultData {
@@ -4674,6 +4809,7 @@ class DefaultData {
   int dailyProtein = 146;
   int dailyFat = 67;
   int dailyCarbs = 316;
+  ThemeMode themeMode = ThemeMode.light;
 
   List<String> meals = ['Breakfast', 'Lunch', 'Dinner'];
 }
