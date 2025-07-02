@@ -43,7 +43,11 @@ class _AppState extends State<App> {
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<CurrentAppState>();
-    bool isDarkMode = appState.themeMode == ThemeMode.dark;
+    bool isDarkMode = appState.defaultData.themeMode == ThemeMode.dark;
+    // wait until the app state is initialized
+    if (appState.loaded == false) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
     return Builder(
       builder: (context) => MaterialApp(
@@ -142,7 +146,7 @@ class _AppState extends State<App> {
             ),
           ),
         ),
-        themeMode: appState.themeMode, // Use the theme mode from app state
+        themeMode: appState.defaultData.themeMode, // Use the theme mode from app state
         home: Stack(
           children: [
             HomePage(),
@@ -161,7 +165,7 @@ class _AppState extends State<App> {
                 ),
                 onPressed: () {
                   // Toggle the theme mode
-                  appState.ChangeTheme(!isDarkMode);
+                  appState.changeTheme(!isDarkMode);
                 },
               ),
             ),
@@ -187,20 +191,13 @@ class CurrentAppState extends ChangeNotifier {
 
   // Database instance and IDs
   var database;
+  bool loaded = false; // Flag to check if the database is loaded
   int nextFoodID = 0; // ID for the next food to be added
   int nextUserMealID = 0; // ID for the next user meal to be added
   int nextWeightID = 0; // ID for the next weight entry to be added
 
-  //-----------------------------
   // default data
   DefaultData defaultData = DefaultData();
-  ThemeMode themeMode = ThemeMode.light;
-  void ChangeTheme(bool isDarkMode) {
-    // Change the theme mode based on the isDarkMode flag
-    themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
-    notifyListeners();
-  }
-  // ----------------------------
 
   // current day data
   late DayData currentDay;
@@ -215,9 +212,9 @@ class CurrentAppState extends ChangeNotifier {
   CurrentAppState() {
     // Initialize the database
     initializeDatabase();
-    currentDay = DayData(defaultData);
-    days.add(currentDay);
   }
+
+  // ----------------------------------------------------------- Database Management -----------------------------------------------------------
 
   //Initialize the database
   Future<void> initializeDatabase() async {
@@ -238,12 +235,18 @@ class CurrentAppState extends ChangeNotifier {
           'CREATE TABLE IF NOT EXISTS weightData(id INTEGER PRIMARY KEY, weight TEXT, date TEXT)'
         );
         // Create the defaultData table
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS defaultData(id INTEGER PRIMARY KEY, dailyCalories INTEGER, dailyCarbs INTEGER, dailyFat INTEGER, dailyProtein INTEGER, themeMode TEXT, mealNames TEXT)'
+        );
       },
       version: 1,
     );
 
     // DEBUG - clear the database
     // await clearDatabase();
+
+    // Load the default data from the database
+    await loadDefaultData();
 
     // load in the foods from the database
     foods = await getFoodsFromDatabase();
@@ -271,25 +274,42 @@ class CurrentAppState extends ChangeNotifier {
     } else {
       nextWeightID = 0; // Start from 0 if no weights exist
     }
-  }
 
-  // change the current day to a specific date
-  void changeCurrentDay(DateTime newDate) {
-    // check if the date already exists in the days list
-    for (var day in days) {
-      if (day.date.year == newDate.year && day.date.month == newDate.month && day.date.day == newDate.day) {
-        currentDay = day;
-        notifyListeners();
-        return;
-      }
-    }
+    loaded = true; // Set the loaded flag to true
 
-    // if the date does not exist, create a new day
-    currentDay = DayData(defaultData, date: newDate);
-    currentDay.date = newDate;
-    days.add(currentDay);
     notifyListeners();
   }
+
+  // Clears all data in the database
+  Future<void> clearDatabase() async {
+    // Clear the foodData table
+    await database.delete('foodData');
+    // Reset the foods list
+    foods.clear();
+    nextFoodID = 0; // Reset the nextFoodID
+    
+    // Clear the userMeals table
+    await database.delete('userMeals');
+    // Reset the userMeals list
+    userMeals.clear();
+    nextUserMealID = 0; // Reset the nextUserMealID
+
+    // Clear the weightData table
+    await database.delete('weightData');
+    // Reset the weightList
+    weightList.clear();
+    nextWeightID = 0; // Reset the nextWeightID
+
+    // Clear the defaultData table
+    await database.delete('defaultData');
+    // Reset the defaultData
+    defaultData = DefaultData();
+
+    notifyListeners();
+  }
+
+
+  // ----------------------------------------------------------- Food Management -----------------------------------------------------------
 
   // Add a new food to the database
   Future<void> addFoodToDatabase(FoodData food) async {
@@ -346,27 +366,19 @@ class CurrentAppState extends ChangeNotifier {
     // Match the foods list to the database
     matchFoodsToDatabase();
   }
-  
-  // Clears all data in the database
-  // Used for testing purposes
-  Future<void> clearDatabase() async {
-    // Clear the foodData table
-    await database.delete('foodData');
-    // Reset the foods list
-    foods.clear();
-    nextFoodID = 0; // Reset the nextFoodID
-    
-    // Clear the userMeals table
-    await database.delete('userMeals');
-    // Reset the userMeals list
-    userMeals.clear();
-    nextUserMealID = 0; // Reset the nextUserMealID
 
-    // Clear the weightData table
-    await database.delete('weightData');
-    // Reset the weightList
-    weightList.clear();
-    nextWeightID = 0; // Reset the nextWeightID
+  // Update the currently selected food's data
+  Future<void> updateCurrentlySelectedFoodData(FoodData foodData) async {
+    // currentlySelectedFood.foodData = foodData;
+    await database.update(
+      'foodData',
+      foodData.toMap(),
+      where: 'id = ?',
+      whereArgs: [currentlySelectedFood.foodData.id],
+    );
+
+    // Match the foods list to the database
+    matchFoodsToDatabase();
 
     notifyListeners();
   }
@@ -384,6 +396,53 @@ class CurrentAppState extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // Get food data from a barcode using Open Food Facts API
+  Future<FoodData?> getFoodDataFromBarcode(String barcode) async {
+    // set a UserAgent to avoid issues with the Open Food Facts API
+    OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'CalorieTrackerApp');
+    final ProductQueryConfiguration configuration = ProductQueryConfiguration(
+      barcode,
+      fields: [ProductField.ALL],
+      version: ProductQueryVersion.v3,
+    );
+    // Fetch the product data from Open Food Facts API
+    final ProductResultV3 result = await OpenFoodAPIClient.getProductV3(configuration);
+    // Check if the product was found
+    if (result.status == ProductResultV3.statusSuccess) {
+      // Create the food name
+      String name = result.product?.productName ?? 'Unknown Product';
+      String brand = result.product?.brands ?? 'Unknown Brand';
+      String productName = '$brand $name';
+
+      // Check if the product has nutritional information
+      if (result.product?.nutriments != null) {
+        Nutriments nutriments = result.product!.nutriments!;
+        int calories = nutriments.getValue(Nutrient.energyKCal, PerSize.serving)?.round() ?? 0;
+        int carbs = nutriments.getValue(Nutrient.carbohydrates, PerSize.serving)?.round() ?? 0;
+        int fat = nutriments.getValue(Nutrient.fat, PerSize.serving)?.round() ?? 0;
+        int protein = nutriments.getValue(Nutrient.proteins, PerSize.serving)?.round() ?? 0;
+        // Create a FoodData object with the nutritional information
+        FoodData foodData = FoodData(
+          name: productName,
+          calories: calories,
+          carbs: carbs,
+          fat: fat,
+          protein: protein,
+        );
+        // return the food data
+        return foodData;
+      }
+      else {
+        throw Exception('No nutritional information available for product with barcode: $barcode');
+      }
+    }
+    else {
+      throw Exception('product not found, please insert data for $barcode');
+    }
+  }
+
+  // ----------------------------------------------------------- Meal Management -----------------------------------------------------------
 
   // Add a new food to the currently selected meal
   void addNewFoodToMeal(Meal meal, Food food) {
@@ -429,7 +488,7 @@ class CurrentAppState extends ChangeNotifier {
     currentDay.meals.remove(meal);
     if (futureDays) {
       // Remove the meal from default meals for future days
-      defaultData.meals.removeWhere((m) => m == meal.mealName);
+      defaultData.mealNames.removeWhere((m) => m == meal.mealName);
     }
     notifyListeners();
   }
@@ -443,150 +502,14 @@ class CurrentAppState extends ChangeNotifier {
     // Add the new meal to the current day's meals
     currentDay.meals.add(newMeal);
     // Add to default meals
-    if (toDefault && !defaultData.meals.contains(meal.mealName)) {
-      defaultData.meals.add(meal.mealName);
+    if (toDefault && !defaultData.mealNames.contains(meal.mealName)) {
+      defaultData.mealNames.add(meal.mealName);
     }
     notifyListeners();
   }
 
-  // Add a new weight to the list of weights
-  Future<void> addNewWeight(WeightData weight) async {
-    // Set the ID for the new weight
-    weight.id = nextWeightID;
-
-    // Add the weight to the database
-    await database.insert(
-      'weightData',
-      weight.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-
-    // Increment the next weight ID
-    nextWeightID++;
-    
-    matchWeightsToDatabase();
-  }
-
-  // Fetch all weights from the database
-  Future<List<WeightData>> getWeightsFromDatabase() async {
-    // Query the database for all weights
-    final List<Map<String, dynamic>> maps = await database.query('weightData');
-
-    // If the database is empty, return an empty list
-    if (maps.isEmpty) {
-      return [];
-    }
-
-    // Convert the maps to WeightData objects and add them to the weightList
-    return [
-      for (final {'id': id, 'weight': weight, 'date': date} in maps)
-        WeightData(
-            id: id,
-            weight: double.tryParse(weight as String) ?? 0.0, // Ensure weight is parsed correctly
-            date: DateTime.parse(date as String) // Ensure date is parsed correctly
-        ),
-    ];
-  }
-
-  // Match the weight list to the database
-  void matchWeightsToDatabase() async {
-    // reset the weight list
-    weightList = await getWeightsFromDatabase();
-    // sort the weight list by date
-    weightList.sort((a, b) => a.date.compareTo(b.date));
-    // reset the last selected weight
-    if (weightList.isNotEmpty) {
-      currentlySelectedWeight = weightList.last; // Set the last weight as the currently selected weight
-    } else {
-      currentlySelectedWeight = WeightData(); // Reset to a default empty weight
-    }
-    notifyListeners();
-  }
-
-  // Update the currently selected weight
-  Future<void> updatedCurrentWeight(double weight, DateTime date) async{
-    // Update the currently selected weight's data
-    currentlySelectedWeight.weight = weight;
-    currentlySelectedWeight.date = date;
-
-    // Update the weight in the database
-    database.update(
-      'weightData',
-      currentlySelectedWeight.toMap(),
-      where: 'id = ?',
-      whereArgs: [currentlySelectedWeight.id],
-    );
-
-    // Match the weights list to the database
-    matchWeightsToDatabase();
-    
-    notifyListeners();
-  }
-
-  // Remove a weight entry from the list of weigths
-  Future<void> removeWeight(WeightData weight) async {
-    // Remove the weight from the database
-    database.delete(
-      'weightData',
-      where: 'id = ?',
-      whereArgs: [weight.id],
-    );
-
-    // Remove the weight from the weight list
-    weightList.remove(weight);
-
-    // Match the weights list to the database
-    matchWeightsToDatabase();
-
-    notifyListeners();
-  }
-
-  // Set the calorie and macro goals for current and future days
-  void setCalorieAndMacroGoals(int calories, int carbs, int fat, int protein) {
-    // Set the daily calorie and macro goals in default data
-    defaultData.dailyCalories = calories;
-    defaultData.dailyCarbs = carbs;
-    defaultData.dailyFat = fat;
-    defaultData.dailyProtein = protein;
-
-    // Update the current day's goals as well
-    currentDay.maxCalories = calories;
-    currentDay.maxCarbs = carbs;
-    currentDay.maxFat = fat;
-    currentDay.maxProtein = protein;
-
-    // Notify listeners to update the UI
-    notifyListeners();
-  }
-
-  // Update the currently selected food's data
-  Future<void> updateCurrentlySelectedFoodData(FoodData foodData) async {
-    // currentlySelectedFood.foodData = foodData;
-    await database.update(
-      'foodData',
-      foodData.toMap(),
-      where: 'id = ?',
-      whereArgs: [currentlySelectedFood.foodData.id],
-    );
-
-    // Match the foods list to the database
-    matchFoodsToDatabase();
-
-    notifyListeners();
-  }
-
-  // Change the name of the default meal
-  void changeDefaultMealName(String mealName, String defaultMeal) {
-    if (defaultData.meals.contains(defaultMeal)) {
-      int index = defaultData.meals.indexOf(defaultMeal);
-      defaultData.meals[index] = mealName;
-    }
-    else {
-      // If the default meal is not found, add it
-      defaultData.meals.add(mealName);
-    }
-    notifyListeners();
-  }
+  
+  // ----------------------------------------------------------- User Meals -----------------------------------------------------------
 
   // Add a new user meal to the list of user meals
   Future<void> addNewUserMeal(UserMeal userMeal) async{
@@ -713,49 +636,234 @@ class CurrentAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Get food data from a barcode using Open Food Facts API
-  Future<FoodData?> getFoodDataFromBarcode(String barcode) async {
-    // set a UserAgent to avoid issues with the Open Food Facts API
-    OpenFoodAPIConfiguration.userAgent = UserAgent(name: 'CalorieTrackerApp');
-    final ProductQueryConfiguration configuration = ProductQueryConfiguration(
-      barcode,
-      fields: [ProductField.ALL],
-      version: ProductQueryVersion.v3,
-    );
-    // Fetch the product data from Open Food Facts API
-    final ProductResultV3 result = await OpenFoodAPIClient.getProductV3(configuration);
-    // Check if the product was found
-    if (result.status == ProductResultV3.statusSuccess) {
-      // Create the food name
-      String name = result.product?.productName ?? 'Unknown Product';
-      String brand = result.product?.brands ?? 'Unknown Brand';
-      String productName = '$brand $name';
+  // ----------------------------------------------------------- Weight Management -----------------------------------------------------------
 
-      // Check if the product has nutritional information
-      if (result.product?.nutriments != null) {
-        Nutriments nutriments = result.product!.nutriments!;
-        int calories = nutriments.getValue(Nutrient.energyKCal, PerSize.serving)?.round() ?? 0;
-        int carbs = nutriments.getValue(Nutrient.carbohydrates, PerSize.serving)?.round() ?? 0;
-        int fat = nutriments.getValue(Nutrient.fat, PerSize.serving)?.round() ?? 0;
-        int protein = nutriments.getValue(Nutrient.proteins, PerSize.serving)?.round() ?? 0;
-        // Create a FoodData object with the nutritional information
-        FoodData foodData = FoodData(
-          name: productName,
-          calories: calories,
-          carbs: carbs,
-          fat: fat,
-          protein: protein,
-        );
-        // return the food data
-        return foodData;
-      }
-      else {
-        throw Exception('No nutritional information available for product with barcode: $barcode');
-      }
+  // Add a new weight to the list of weights
+  Future<void> addNewWeight(WeightData weight) async {
+    // Set the ID for the new weight
+    weight.id = nextWeightID;
+
+    // Add the weight to the database
+    await database.insert(
+      'weightData',
+      weight.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // Increment the next weight ID
+    nextWeightID++;
+    
+    matchWeightsToDatabase();
+  }
+
+  // Fetch all weights from the database
+  Future<List<WeightData>> getWeightsFromDatabase() async {
+    // Query the database for all weights
+    final List<Map<String, dynamic>> maps = await database.query('weightData');
+
+    // If the database is empty, return an empty list
+    if (maps.isEmpty) {
+      return [];
+    }
+
+    // Convert the maps to WeightData objects and add them to the weightList
+    return [
+      for (final {'id': id, 'weight': weight, 'date': date} in maps)
+        WeightData(
+            id: id,
+            weight: double.tryParse(weight as String) ?? 0.0, // Ensure weight is parsed correctly
+            date: DateTime.parse(date as String) // Ensure date is parsed correctly
+        ),
+    ];
+  }
+
+  // Match the weight list to the database
+  void matchWeightsToDatabase() async {
+    // reset the weight list
+    weightList = await getWeightsFromDatabase();
+    // sort the weight list by date
+    weightList.sort((a, b) => a.date.compareTo(b.date));
+    // reset the last selected weight
+    if (weightList.isNotEmpty) {
+      currentlySelectedWeight = weightList.last; // Set the last weight as the currently selected weight
+    } else {
+      currentlySelectedWeight = WeightData(); // Reset to a default empty weight
+    }
+    notifyListeners();
+  }
+
+  // Update the currently selected weight
+  Future<void> updatedCurrentWeight(double weight, DateTime date) async{
+    // Update the currently selected weight's data
+    currentlySelectedWeight.weight = weight;
+    currentlySelectedWeight.date = date;
+
+    // Update the weight in the database
+    database.update(
+      'weightData',
+      currentlySelectedWeight.toMap(),
+      where: 'id = ?',
+      whereArgs: [currentlySelectedWeight.id],
+    );
+
+    // Match the weights list to the database
+    matchWeightsToDatabase();
+    
+    notifyListeners();
+  }
+
+  // Remove a weight entry from the list of weights
+  Future<void> removeWeight(WeightData weight) async {
+    // Remove the weight from the database
+    database.delete(
+      'weightData',
+      where: 'id = ?',
+      whereArgs: [weight.id],
+    );
+
+    // Remove the weight from the weight list
+    weightList.remove(weight);
+
+    // Match the weights list to the database
+    matchWeightsToDatabase();
+
+    notifyListeners();
+  }
+
+  // ----------------------------------------------------------- Default Data Management -----------------------------------------------------------
+
+  // Load the default data from the database
+  Future<void> loadDefaultData() async {
+    // Query the database for the default data
+    final List<Map<String, dynamic>> maps = await database.query('defaultData');
+
+    // If the database is empty, return an empty DefaultData object
+    if (maps.isEmpty) {
+      // insert default data into the database
+      defaultData = DefaultData();
+      // Insert the default data into the database
+      await database.insert(
+        'defaultData',
+        defaultData.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      // Load the current day data
+      currentDay = DayData(defaultData, date: DateTime.now());
     }
     else {
-      throw Exception('product not found, please insert data for $barcode');
+      // Convert the map to a DefaultData object
+      final Map<String, dynamic> dataMap = maps.first;
+      defaultData = DefaultData(
+        dailyCalories: dataMap['dailyCalories'] ?? 2000,
+        dailyCarbs: dataMap['dailyCarbs'] ?? 275,
+        dailyFat: dataMap['dailyFat'] ?? 78,
+        dailyProtein: dataMap['dailyProtein'] ?? 67,
+        themeMode: dataMap['themeMode'] == 'dark' ? ThemeMode.dark : ThemeMode.light,
+        mealNames: (dataMap['mealNames'] as String?)?.split(',') ?? ['Breakfast', 'Lunch', 'Dinner'],
+      );
+
+      // Load the current day data
+      currentDay = DayData(defaultData, date: DateTime.now());
     }
+  }
+
+  // Save the default data to the database
+  Future<void> saveDefaultData() async {
+    // always save the default data to the same row in the database
+    await database.insert(
+      'defaultData',
+      defaultData.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    printDefaultDataFromDatabase(); // Print the default data for debugging
+
+    // Notify listeners to update the UI
+    notifyListeners();
+  }
+
+  // print all the default data from the database
+  Future<void> printDefaultDataFromDatabase() async {
+    // Query the database for the default data
+    final List<Map<String, dynamic>> maps = await database.query('defaultData');
+
+    // If the database is empty, print a message
+    if (maps.isEmpty) {
+      print('No default data found in the database.');
+      return;
+    }
+
+    // Print the default data
+    for (final map in maps) {
+      print('Default Data:');
+      print('Daily Calories: ${map['dailyCalories']}');
+      print('Daily Carbs: ${map['dailyCarbs']}');
+      print('Daily Fat: ${map['dailyFat']}');
+      print('Daily Protein: ${map['dailyProtein']}');
+      print('Theme Mode: ${map['themeMode']}');
+      print('Meal Names: ${map['mealNames']}');
+    }
+  }
+
+  // Set the calorie and macro goals for current and future days
+  void setCalorieAndMacroGoals(int calories, int carbs, int fat, int protein) {
+    // Set the daily calorie and macro goals in default data
+    defaultData.dailyCalories = calories;
+    defaultData.dailyCarbs = carbs;
+    defaultData.dailyFat = fat;
+    defaultData.dailyProtein = protein;
+
+    // Update the current day's goals as well
+    currentDay.maxCalories = calories;
+    currentDay.maxCarbs = carbs;
+    currentDay.maxFat = fat;
+    currentDay.maxProtein = protein;
+
+    // Save the updated default data to the database
+    saveDefaultData();
+  }
+  
+  // Change the name of the default meal
+  void changeDefaultMealName(String mealName, String defaultMeal) {
+    if (defaultData.mealNames.contains(defaultMeal)) {
+      int index = defaultData.mealNames.indexOf(defaultMeal);
+      defaultData.mealNames[index] = mealName;
+    }
+    else {
+      // If the default meal is not found, add it
+      defaultData.mealNames.add(mealName);
+    }
+
+    // Save the updated default data to the database
+    saveDefaultData();
+  }
+
+  void changeTheme(bool isDarkMode) {
+    // Change the theme mode based on the isDarkMode flag
+    defaultData.themeMode = isDarkMode ? ThemeMode.dark : ThemeMode.light;
+    // Save the updated default data to the database
+    saveDefaultData();
+  }
+
+  // ----------------------------------------------------------- Day Management -----------------------------------------------------------
+  
+  // TODO - make this work with day implementation
+  // change the current day to a specific date
+  void changeCurrentDay(DateTime newDate) {
+    // check if the date already exists in the days list
+    for (var day in days) {
+      if (day.date.year == newDate.year && day.date.month == newDate.month && day.date.day == newDate.day) {
+        currentDay = day;
+        notifyListeners();
+        return;
+      }
+    }
+
+    // if the date does not exist, create a new day
+    currentDay = DayData(defaultData, date: newDate);
+    currentDay.date = newDate;
+    days.add(currentDay);
+    notifyListeners();
   }
 }
 
@@ -3037,7 +3145,7 @@ class DefaultMealsMenu extends StatelessWidget {
                     child: TextField(
                       decoration: InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: appState.defaultData.meals.isEmpty ? '3' : appState.defaultData.meals.length.toString(),
+                        hintText: appState.defaultData.mealNames.isEmpty ? '3' : appState.defaultData.mealNames.length.toString(),
                       ),
                       // Restricts the input to number only
                       keyboardType: TextInputType.number,
@@ -3051,18 +3159,18 @@ class DefaultMealsMenu extends StatelessWidget {
 
                         if (temp != 0)
                         {
-                          if (temp > appState.defaultData.meals.length)
+                          if (temp > appState.defaultData.mealNames.length)
                           {
-                            for (int i = appState.defaultData.meals.length; i < temp; i++)
+                            for (int i = appState.defaultData.mealNames.length; i < temp; i++)
                             {
                               // Add a new meal to the list
-                              appState.defaultData.meals.add('Meal ${i + 1}');
+                              appState.defaultData.mealNames.add('Meal ${i + 1}');
                             }
                           }
-                          else if (temp < appState.defaultData.meals.length)
+                          else if (temp < appState.defaultData.mealNames.length)
                           {
                             // Remove meals from the list
-                            appState.defaultData.meals.removeRange(temp, appState.defaultData.meals.length);
+                            appState.defaultData.mealNames.removeRange(temp, appState.defaultData.mealNames.length);
                           }
                           else
                           {
@@ -3073,7 +3181,7 @@ class DefaultMealsMenu extends StatelessWidget {
                         else
                         {
                           // If the value is 0, clear the list
-                          appState.defaultData.meals.clear();
+                          appState.defaultData.mealNames.clear();
                         }
                       },
                     ),
@@ -3094,7 +3202,7 @@ class DefaultMealsMenu extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.start,
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  for (int i = 0; i < appState.defaultData.meals.length; i++)
+                  for (int i = 0; i < appState.defaultData.mealNames.length; i++)
                     Text('Meal Name', style: TextStyle(fontSize: 17)),
                 ],
               ),
@@ -3107,7 +3215,7 @@ class DefaultMealsMenu extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   // Daily Meals
-                  for (var mealName in appState.defaultData.meals)
+                  for (var mealName in appState.defaultData.mealNames)
                     SizedBox(
                       width: 175,
                       height: 50,
@@ -4535,16 +4643,16 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
 
 class DayData {
   DateTime date = DateTime.now();
-  int maxCalories = 2600;
-  int maxProtein = 146;
-  int maxFat = 67;
-  int maxCarbs = 316;
+  int maxCalories = 2000;
+  int maxProtein = 67;
+  int maxFat = 78;
+  int maxCarbs = 275;
 
   List<Meal> meals = [];
 
   DayData(DefaultData defaultData, {DateTime? date}) {
     // Initialize meals with default meal names
-    for (var mealName in defaultData.meals) {
+    for (var mealName in defaultData.mealNames) {
       meals.add(Meal()..mealName = mealName);
     }
 
@@ -4805,14 +4913,40 @@ class WeightData {
 }
 
 class DefaultData {
-  int dailyCalories = 2600;
-  int dailyProtein = 146;
-  int dailyFat = 67;
-  int dailyCarbs = 316;
+  int id = 0; // Unique identifier for the default data
+  int dailyCalories = 2000;
+  int dailyProtein = 67;
+  int dailyFat = 78;
+  int dailyCarbs = 275;
   ThemeMode themeMode = ThemeMode.light;
 
-  List<String> meals = ['Breakfast', 'Lunch', 'Dinner'];
+  List<String> mealNames;
+
+  DefaultData({
+    this.id = 0,
+    this.dailyCalories = 2000,
+    this.dailyProtein = 67,
+    this.dailyFat = 78,
+    this.dailyCarbs = 275,
+    this.themeMode = ThemeMode.light,
+    List<String>? mealNames,
+  }) : mealNames = mealNames ?? ['Breakfast', 'Lunch', 'Dinner'];
+
+  // Convert DefaultData to a map for database storage
+  Map<String, Object> toMap() {
+    return {
+      'id': id,
+      'dailyCalories': dailyCalories,
+      'dailyProtein': dailyProtein,
+      'dailyFat': dailyFat,
+      'dailyCarbs': dailyCarbs,
+      'themeMode': themeMode == ThemeMode.dark ? 'dark' : 'light',
+      'mealNames': mealNames.join(','),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'DefaultData{id: $id, dailyCalories: $dailyCalories, dailyProtein: $dailyProtein, dailyFat: $dailyFat, dailyCarbs: $dailyCarbs, themeMode: $themeMode, mealNames: $mealNames}';
+  }
 }
-
-
-// ================================= DATA PERSISTENCE =================================
