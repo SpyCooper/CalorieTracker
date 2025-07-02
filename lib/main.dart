@@ -739,16 +739,17 @@ class CurrentAppState extends ChangeNotifier {
 
     // If the database is empty, return an empty DefaultData object
     if (maps.isEmpty) {
-      // insert default data into the database
-      defaultData = DefaultData();
-      // Insert the default data into the database
-      await database.insert(
-        'defaultData',
-        defaultData.toMap(),
-        conflictAlgorithm: ConflictAlgorithm.replace,
+      // Save the default data to the database
+      defaultData = DefaultData(
+        dailyCalories: 2000,
+        dailyCarbs: 275,
+        dailyFat: 78,
+        dailyProtein: 67,
+        themeMode: ThemeMode.light,
+        mealNames: ['Breakfast', 'Lunch', 'Dinner'],
       );
+      await saveDefaultData(); // Save the default data to the database
       // Load the current day data
-      currentDay = DayData(defaultData, date: DateTime.now());
     }
     else {
       // Convert the map to a DefaultData object
@@ -761,10 +762,12 @@ class CurrentAppState extends ChangeNotifier {
         themeMode: dataMap['themeMode'] == 'dark' ? ThemeMode.dark : ThemeMode.light,
         mealNames: (dataMap['mealNames'] as String?)?.split(',') ?? ['Breakfast', 'Lunch', 'Dinner'],
       );
-
-      // Load the current day data
-      currentDay = DayData(defaultData, date: DateTime.now());
     }
+    // Initialize the current day with the default data
+    currentDay = DayData(defaultData, date: DateTime.now());
+
+    // Print the default data for debugging
+    printDefaultDataFromDatabase();
   }
 
   // Save the default data to the database
