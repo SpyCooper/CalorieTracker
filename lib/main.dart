@@ -195,6 +195,7 @@ class CurrentAppState extends ChangeNotifier {
   int nextFoodID = 0; // ID for the next food to be added
   int nextUserMealID = 0; // ID for the next user meal to be added
   int nextWeightID = 0; // ID for the next weight entry to be added
+  int defaultDataID = 0; // ID for the default data row in the database
 
   // default data
   DefaultData defaultData = DefaultData();
@@ -741,6 +742,7 @@ class CurrentAppState extends ChangeNotifier {
     if (maps.isEmpty) {
       // Save the default data to the database
       defaultData = DefaultData(
+        id: defaultDataID, // Use a fixed ID to ensure only one row exists
         dailyCalories: 2000,
         dailyCarbs: 275,
         dailyFat: 78,
@@ -748,12 +750,10 @@ class CurrentAppState extends ChangeNotifier {
         themeMode: ThemeMode.light,
         mealNames: ['Breakfast', 'Lunch', 'Dinner'],
       );
-      await saveDefaultData(); // Save the default data to the database
-      // Load the current day data
     }
     else {
       // Convert the map to a DefaultData object
-      final Map<String, dynamic> dataMap = maps.first;
+      final Map<String, dynamic> dataMap = maps.firstWhere((map) => map['id'] == 0, orElse: () => {});
       defaultData = DefaultData(
         dailyCalories: dataMap['dailyCalories'] ?? 2000,
         dailyCarbs: dataMap['dailyCarbs'] ?? 275,
@@ -763,6 +763,7 @@ class CurrentAppState extends ChangeNotifier {
         mealNames: (dataMap['mealNames'] as String?)?.split(',') ?? ['Breakfast', 'Lunch', 'Dinner'],
       );
     }
+    
     // Initialize the current day with the default data
     currentDay = DayData(defaultData, date: DateTime.now());
 
@@ -772,12 +773,24 @@ class CurrentAppState extends ChangeNotifier {
 
   // Save the default data to the database
   Future<void> saveDefaultData() async {
-    // always save the default data to the same row in the database
-    await database.insert(
-      'defaultData',
-      defaultData.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    // check if the default data already exists in the database
+    final List<Map<String, dynamic>> maps = await database.query('defaultData', where: 'id = ?', whereArgs: [defaultDataID]);
+    if (maps.isNotEmpty) {
+      // Update the existing default data
+      await database.update(
+        'defaultData',
+        defaultData.toMap(),
+        where: 'id = ?',
+        whereArgs: [defaultDataID],
+      );
+    } else {
+      // Insert the default data into the database
+      await database.insert(
+        'defaultData',
+        defaultData.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
 
     printDefaultDataFromDatabase(); // Print the default data for debugging
 
@@ -991,6 +1004,8 @@ class MealsPage extends StatelessWidget {
                 ),
               ]
               ),
+              // spacer
+              SizedBox(width: 5),
               // minus
               Column(
               children: [
@@ -1004,6 +1019,8 @@ class MealsPage extends StatelessWidget {
                 ),
               ]
               ),
+              // spacer
+              SizedBox(width: 5),
               // Calories Used
               Column(
                 children: [
@@ -1017,6 +1034,8 @@ class MealsPage extends StatelessWidget {
                   ),
                 ]
               ),
+              // spacer
+              SizedBox(width: 5),
               // equals
               Column(
                 children: [
@@ -1030,6 +1049,8 @@ class MealsPage extends StatelessWidget {
                   ),
                 ]
               ),
+              // spacer
+              SizedBox(width: 5),
               // Calories Left
               Column(
                 children: [
