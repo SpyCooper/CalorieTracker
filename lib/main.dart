@@ -302,7 +302,7 @@ class CurrentAppState extends ChangeNotifier {
       );
       changeCurrentDay(DateTime.now(), onLoad: true);
     }
-    printDaysFromDatabase(); // Print the days for debugging
+    // printDaysFromDatabase(); // Print the days for debugging
 
     loaded = true; // Set the loaded flag to true
 
@@ -952,13 +952,25 @@ class CurrentAppState extends ChangeNotifier {
             final parts = mealString.split(',').map((part) => part.trim()).toList();
             if (parts.isNotEmpty) {
               final mealName = parts[0];
-              final foodIds = parts.sublist(1).map((id) => int.tryParse(id)).whereType<int>().toList();
               final meal = Meal(mealName: mealName);
-              meal.foods = foodIds.map((id) {
-                final foodData = foods.firstWhere((food) => food.id == id, orElse: () {
-                  return FoodData(name: 'Deleted Food', calories: 0, carbs: 0, fat: 0, protein: 0, id: nextFoodID++);
-                });
-                return Food(foodData: foodData);
+              // check if there are any foods in the meal after the meal name
+              String foodEntries = parts.sublist(1).join(','); // Join the remaining parts as food entries
+              if (foodEntries.isEmpty) {
+                return meal; // Return the meal with no foods
+              }
+              meal.foods = parts.sublist(1).map((foodEntry) {
+                final foodParts = foodEntry.split(':');
+                if (foodParts.length == 2) {
+                  final foodId = int.tryParse(foodParts[0]) ?? -1;
+                  final serving = double.tryParse(foodParts[1]) ?? 1.0;
+
+                  final foodData = foods.firstWhere(
+                    (food) => food.id == foodId,
+                    orElse: () => FoodData(name: 'Deleted Food', calories: 0, carbs: 0, fat: 0, protein: 0, id: nextFoodID++),
+                  );
+                  return Food(foodData: foodData, serving: serving);
+                }
+                return Food(foodData: FoodData(), serving: 1.0);
               }).toList();
               return meal;
             }
@@ -5074,7 +5086,7 @@ class DayData {
       'maxProtein': maxProtein,
       'maxFat': maxFat,
       'maxCarbs': maxCarbs,
-      'meals': meals.map((meal) => '${meal.mealName},${meal.foods.map((food) => food.foodData.id).join(',')}').join('|'),
+      'meals': meals.map((meal) => '${meal.mealName},${meal.foods.map((food) => '${food.foodData.id}:${food.serving}').join(',')}').join('|'),
     };
   }
 
