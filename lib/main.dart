@@ -194,6 +194,7 @@ class CurrentAppState extends ChangeNotifier {
   bool loaded = false; // Flag to check if the database is loaded
   int nextFoodID = 0; // ID for the next food to be added
   int nextUserMealID = 0; // ID for the next user meal to be added
+  int nextDayID = 0; // ID for the next day to be added
   int nextWeightID = 0; // ID for the next weight entry to be added
   int defaultDataID = 0; // ID for the default data row in the database
 
@@ -230,6 +231,10 @@ class CurrentAppState extends ChangeNotifier {
         // Create the userMeals table
         await database.execute(
           'CREATE TABLE IF NOT EXISTS userMeals(id INTEGER PRIMARY KEY, name TEXT, foodInMeal TEXT)'
+        );
+        // Create the DayData table
+        await database.execute(
+          'CREATE TABLE IF NOT EXISTS dayData(id INTEGER PRIMARY KEY, date TEXT, maxCalories INTEGER, maxCarbs INTEGER, maxFat INTEGER, maxProtein INTEGER, meals TEXT)'
         );
         // Create the weightData table
         await database.execute(
@@ -276,6 +281,29 @@ class CurrentAppState extends ChangeNotifier {
       nextWeightID = 0; // Start from 0 if no weights exist
     }
 
+    // load in the days from the database
+    days = await getDaysFromDatabase();
+    // set the next day ID based on the last day in the database
+    if (days.isNotEmpty) {
+      nextDayID = days.last.id + 1; // Increment the last day ID
+      // Set the current day to the last day in the database
+      currentDay = days.last;
+    } else {
+      nextDayID = 0; // Start from 0 if no days exist
+      // Create a new current day with default data
+      currentDay = DayData(
+        id: nextDayID,
+        date: DateTime.now(),
+        maxCalories: defaultData.dailyCalories,
+        maxCarbs: defaultData.dailyCarbs,
+        maxFat: defaultData.dailyFat,
+        maxProtein: defaultData.dailyProtein,
+        meals: [],
+      );
+      changeCurrentDay(DateTime.now(), onLoad: true);
+    }
+    printDaysFromDatabase(); // Print the days for debugging
+
     loaded = true; // Set the loaded flag to true
 
     notifyListeners();
@@ -294,6 +322,14 @@ class CurrentAppState extends ChangeNotifier {
     // Reset the userMeals list
     userMeals.clear();
     nextUserMealID = 0; // Reset the nextUserMealID
+
+    // Clear the dayData table
+    await database.delete('dayData');
+    // Reset the days list
+    days.clear();
+    nextDayID = 0; // Reset the nextDayID
+    // Reset the currentDay
+    changeCurrentDay(DateTime.now());
 
     // Clear the weightData table
     await database.delete('weightData');
@@ -449,7 +485,9 @@ class CurrentAppState extends ChangeNotifier {
   void addNewFoodToMeal(Meal meal, Food food) {
     // Add the food to the currently selected meal
     meal.addNewFood(food);
-    notifyListeners();
+    
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   // Remove a food from the currently selected meal
@@ -460,14 +498,18 @@ class CurrentAppState extends ChangeNotifier {
     currentlySelectedFood = Food(foodData: FoodData(), serving: 1);
     // Reset the currently selected meal
     currentlySelectedMeal = Meal();
-    notifyListeners();
+    
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   // Change the serving size of the currently selected food
   void servingSizeChanged(double newServing) {
     // Update the serving size of the currently selected food
     currentlySelectedFood.serving = newServing;
-    notifyListeners();
+    
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   // Set the currently selected meal
@@ -480,7 +522,9 @@ class CurrentAppState extends ChangeNotifier {
   void setNewMealName(String newName) {
     // Update the meal name of the currently selected meal
     currentlySelectedMeal.mealName = newName;
-    notifyListeners();
+
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   // Remove a meal from the current day's meals
@@ -491,7 +535,9 @@ class CurrentAppState extends ChangeNotifier {
       // Remove the meal from default meals for future days
       defaultData.mealNames.removeWhere((m) => m == meal.mealName);
     }
-    notifyListeners();
+    
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   // Add a meal to the current day's meals
@@ -506,7 +552,9 @@ class CurrentAppState extends ChangeNotifier {
     if (toDefault && !defaultData.mealNames.contains(meal.mealName)) {
       defaultData.mealNames.add(meal.mealName);
     }
-    notifyListeners();
+    
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   
@@ -634,7 +682,9 @@ class CurrentAppState extends ChangeNotifier {
       // Add the new food to the currently selected meal
       currentlySelectedMeal.addNewFood(newFood);
     }
-    notifyListeners();
+    
+    // Update the current day data (this will notify listeners)
+    updateCurrentDay();
   }
 
   // ----------------------------------------------------------- Weight Management -----------------------------------------------------------
@@ -763,12 +813,9 @@ class CurrentAppState extends ChangeNotifier {
         mealNames: (dataMap['mealNames'] as String?)?.split(',') ?? ['Breakfast', 'Lunch', 'Dinner'],
       );
     }
-    
-    // Initialize the current day with the default data
-    currentDay = DayData(defaultData, date: DateTime.now());
 
-    // Print the default data for debugging
-    printDefaultDataFromDatabase();
+    // // Print the default data for debugging
+    // printDefaultDataFromDatabase();
   }
 
   // Save the default data to the database
@@ -792,7 +839,7 @@ class CurrentAppState extends ChangeNotifier {
       );
     }
 
-    printDefaultDataFromDatabase(); // Print the default data for debugging
+    // printDefaultDataFromDatabase(); // Print the default data for debugging
 
     // Notify listeners to update the UI
     notifyListeners();
@@ -862,25 +909,179 @@ class CurrentAppState extends ChangeNotifier {
   }
 
   // ----------------------------------------------------------- Day Management -----------------------------------------------------------
+
+  Future<void> addDayToDatabase(DayData day) async {
+    // Set the day ID to the nextDayID before inserting
+    day.id = nextDayID;
+
+    // Insert the day into the database
+    await database.insert(
+      'dayData',
+      day.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+
+    // Add the day to the days list
+    days.add(day);
+    nextDayID++;
+
+    notifyListeners();
+  }
+
+  // Fetch all days from the database
+  Future<List<DayData>> getDaysFromDatabase() async {
+    // Query the database for all days
+    final List<Map<String, dynamic>> maps = await database.query('dayData');
+
+    // If the database is empty, return an empty list
+    if (maps.isEmpty) {
+      return [];
+    }
+
+    // Convert the maps to DayData objects and add them to the days list
+    return [
+      for (final {'id': id, 'date': date, 'maxCalories': maxCalories, 'maxCarbs': maxCarbs, 'maxFat': maxFat, 'maxProtein': maxProtein, 'meals': meals} in maps)
+        DayData(
+          id: id,
+          date: DateTime.parse(date as String),
+          maxCalories: maxCalories ?? 2000,
+          maxCarbs: maxCarbs ?? 275,
+          maxFat: maxFat ?? 78,
+          maxProtein: maxProtein ?? 67,
+          meals: (meals as String?)?.split('|').where((mealString) => mealString.isNotEmpty).map((mealString) {
+            final parts = mealString.split(',').map((part) => part.trim()).toList();
+            if (parts.isNotEmpty) {
+              final mealName = parts[0];
+              final foodIds = parts.sublist(1).map((id) => int.tryParse(id)).whereType<int>().toList();
+              final meal = Meal(mealName: mealName);
+              meal.foods = foodIds.map((id) {
+                final foodData = foods.firstWhere((food) => food.id == id, orElse: () {
+                  return FoodData(name: 'Deleted Food', calories: 0, carbs: 0, fat: 0, protein: 0, id: nextFoodID++);
+                });
+                return Food(foodData: foodData);
+              }).toList();
+              return meal;
+            }
+            return Meal();
+          }).toList() ?? [],
+        ),
+    ];
+  }
+
+  // Match the days list to the database
+  void matchDaysToDatabase() async {
+    // reset the days list
+    days = await getDaysFromDatabase();
+    // sort the days list by date
+    days.sort((a, b) => a.date.compareTo(b.date));
+    // reset the nextDayID
+    if (days.isNotEmpty) {
+      nextDayID = days.last.id + 1; // Increment the last day ID
+    } else {
+      nextDayID = 0; // Start from 0 if no days exist
+    }
+    notifyListeners();
+  }
   
-  // TODO - make this work with day implementation
+  // Update a day in the database
+  Future<void> updateDayInDatabase(DayData day) async {
+    // Update the day in the database
+    await database.update(
+      'dayData',
+      day.toMap(),
+      where: 'date = ?',
+      whereArgs: [day.date.toIso8601String()],
+    );
+
+    // Match the days list to the database
+    matchDaysToDatabase();
+  }
+
+  Future<void> updateCurrentDay() async {
+    // Update the current day's data in the database
+    await updateDayInDatabase(currentDay);
+    notifyListeners();
+  }
+
+  // delete a day from the database
+  Future<void> deleteDayFromDatabase(DayData day) async {
+    // Delete the day from the database
+    await database.delete(
+      'dayData',
+      where: 'date = ?',
+      whereArgs: [day.date.toIso8601String()],
+    );
+
+    // Remove the day from the days list
+    days.remove(day);
+
+    // Match the days list to the database
+    matchDaysToDatabase();
+
+    notifyListeners();
+  }
+  
   // change the current day to a specific date
-  void changeCurrentDay(DateTime newDate) {
+  Future<void> changeCurrentDay(DateTime newDate, {bool onLoad = false}) async {
+    if (onLoad)
+    {
+      updateCurrentDay(); // Update the current day data before changing
+    }
+
+    // Load the days from the database if not already loaded
+    days = await getDaysFromDatabase();
+
     // check if the date already exists in the days list
     for (var day in days) {
       if (day.date.year == newDate.year && day.date.month == newDate.month && day.date.day == newDate.day) {
+        // load the existing day
         currentDay = day;
         notifyListeners();
         return;
       }
     }
 
-    // if the date does not exist, create a new day
-    currentDay = DayData(defaultData, date: newDate);
-    currentDay.date = newDate;
-    days.add(currentDay);
-    notifyListeners();
+    // if the date does not exist, create a new day and add it to the database
+    var tempDay = DayData(
+      date: DateTime(newDate.year, newDate.month, newDate.day),
+      maxCalories: defaultData.dailyCalories,
+      maxCarbs: defaultData.dailyCarbs,
+      maxFat: defaultData.dailyFat,
+      maxProtein: defaultData.dailyProtein,
+      meals: defaultData.mealNames.map((mealName) => Meal(mealName: mealName)).toList(),
+    );
+    addDayToDatabase(tempDay);
+    // Add the new day to the days list
+    days.add(tempDay);
+    // Set the current day to the new day
+    currentDay = tempDay;
+
+    // Match the days list to the database
+    matchDaysToDatabase();
   }
+
+  Future<void> printDaysFromDatabase() async {
+    // Query the database for all days
+    final List<Map<String, dynamic>> maps = await database.query('dayData');
+
+    // If the database is empty, print a message
+    if (maps.isEmpty) {
+      print('No days found in the database.');
+      return;
+    }
+
+    // Print the days
+    for (final map in maps) {
+      print('Day ID: ${map['id']}');
+      print('Date: ${map['date']}');
+      print('Max Calories: ${map['maxCalories']}');
+      print('Max Carbs: ${map['maxCarbs']}');
+      print('Max Fat: ${map['maxFat']}');
+      print('Max Protein: ${map['maxProtein']}');
+      print('Meals: ${map['meals']}');
+    }
+  }
+
 }
 
 class HomePage extends StatefulWidget {
@@ -940,8 +1141,6 @@ class _HomePageState extends State<HomePage> {
             onChanged: (value) {
               if (value != null) {
                 appState.changeCurrentDay(value);
-                // update the page to reflect the new current day
-                setState(() {});
               }
             },
             dropdownColor: theme.primaryColor, // set dropdown background color
@@ -2895,6 +3094,26 @@ class SettingsPage extends StatelessWidget {
             }
           )
         ),
+        // Clear Data
+        Container(
+          decoration: BoxDecoration(border: Border(bottom: BorderSide())),
+          child: InkWell(
+            child: SizedBox(
+              width: 350,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Clear Data', style: TextStyle(fontSize: 20)),
+                  Icon(Icons.arrow_right_sharp, size: 30,),
+                ],
+              )
+            ),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(builder: (context) => ClearDataMenu()));
+            }
+          )
+        )
       ]
     );
   }
@@ -4663,9 +4882,116 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
   }
 }
 
+class ClearDataMenu extends StatelessWidget {
+  const ClearDataMenu({super.key});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Clear Data'),),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start,
+          spacing: 15,
+          children: [
+            SizedBox(height: 0,),
+            Text('Are you sure you want to clear all data?', style: TextStyle(fontSize: 20), textAlign: TextAlign.center,),
+            SizedBox(
+              width: 350,
+              child: Text(
+                'All user data is saved locally and is not collected. Deleting user data will wipe all days, foods, user meals, weights, and user settings',
+                style: TextStyle(fontSize: 15),
+                textAlign: TextAlign.center,
+              ),
+            ),
+            SizedBox(height: 25,),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                fixedSize: const Size(250, 50),
+                foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+                side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
+              ),
+              child: Text('Clear Data', style: TextStyle(fontSize: 20)),
+              onPressed: () {
+                // Show the warning pop-up
+                showDialog(
+                  context: context,
+                  builder: (context) => ClearDataWarningPopUp(),
+                ).then((value) {
+                  // pop the dialog and return to the previous screen
+                  Navigator.of(context).pop();
+                });
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ClearDataWarningPopUp extends StatefulWidget {
+  const ClearDataWarningPopUp({super.key});
+
+  @override
+  State<ClearDataWarningPopUp> createState() => _ClearDataWarningPopUpState();
+}
+
+class _ClearDataWarningPopUpState extends State<ClearDataWarningPopUp> {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<CurrentAppState>();
+    return AlertDialog(
+      title: Text('Clear Data Warning'),
+      content: Text(
+        'Are you sure you want to clear all data? This action cannot be undone.',
+        style: TextStyle(fontSize: 16),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop(); // Close the dialog
+          },
+          child: Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () async {
+            // show another confirmation dialog
+            await showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Confirm Clear Data'),
+                content: Text('This will delete all user data. Are you absolutely sure?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false), // Cancel
+                    child: Text('No, Go Back'),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      // Clear all data in the app state
+                      appState.clearDatabase();
+                      // Close the dialog and return to the previous screen
+                      Navigator.of(context).pop();
+                      Navigator.of(context).pop(); // Close the warning dialog
+                    },
+                    child: Text('Yes, Clear Data', style: TextStyle(color: Color.fromARGB(255, 179, 14, 14))),
+                  ),
+                ],
+              ),
+            );
+          },
+          child: Text('Clear Data', style: TextStyle(color: Color.fromARGB(255, 179, 14, 14))),
+        ),
+      ],
+    );
+  }
+}
+
 // ================================= DATA =================================
 
 class DayData {
+  int id = 0; // Unique identifier for the day
   DateTime date = DateTime.now();
   int maxCalories = 2000;
   int maxProtein = 67;
@@ -4674,18 +5000,28 @@ class DayData {
 
   List<Meal> meals = [];
 
-  DayData(DefaultData defaultData, {DateTime? date}) {
-    // Initialize meals with default meal names
-    for (var mealName in defaultData.mealNames) {
-      meals.add(Meal()..mealName = mealName);
-    }
+  // DayData(DefaultData defaultData, {DateTime? date}) {
+  //   // Initialize meals with default meal names
+  //   for (var mealName in defaultData.mealNames) {
+  //     meals.add(Meal()..mealName = mealName);
+  //   }
 
-    // Set default max values
-    maxCalories = defaultData.dailyCalories;
-    maxProtein = defaultData.dailyProtein;
-    maxFat = defaultData.dailyFat;
-    maxCarbs = defaultData.dailyCarbs;
-  }
+  //   // Set default max values
+  //   maxCalories = defaultData.dailyCalories;
+  //   maxProtein = defaultData.dailyProtein;
+  //   maxFat = defaultData.dailyFat;
+  //   maxCarbs = defaultData.dailyCarbs;
+  // }
+
+  DayData({
+    this.id = 0,
+    required this.date,
+    this.maxCalories = 2000,
+    this.maxProtein = 67,
+    this.maxFat = 78,
+    this.maxCarbs = 275,
+    List<Meal>? meals,
+  }) : meals = meals ?? [];
 
   int getCalories () {
     int calories = 0;
@@ -4728,6 +5064,23 @@ class DayData {
     }
     // Add the new meal to the meals list
     meals.add(newMeal);
+  }
+
+  Map<String, Object> toMap() {
+    return {
+      'id': id,
+      'date': date.toIso8601String(),
+      'maxCalories': maxCalories,
+      'maxProtein': maxProtein,
+      'maxFat': maxFat,
+      'maxCarbs': maxCarbs,
+      'meals': meals.map((meal) => '${meal.mealName},${meal.foods.map((food) => food.foodData.id).join(',')}').join('|'),
+    };
+  }
+
+  @override
+  String toString() {
+    return 'DayData{id: $id, date: $date, maxCalories: $maxCalories, maxProtein: $maxProtein, maxFat: $maxFat, maxCarbs: $maxCarbs, meals: $meals}';
   }
 }
 
