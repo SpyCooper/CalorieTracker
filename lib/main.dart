@@ -11,7 +11,6 @@ import 'package:path/path.dart' as path;
 import 'package:sqflite/sqflite.dart';
 
 void main() async{
-  // TODO - create the current date and time if it is not already set
   runApp(const Start());
 }
 
@@ -2642,7 +2641,6 @@ class WeightGraph extends StatefulWidget {
   State<WeightGraph> createState() => _WeightGraphState();
 }
 
-// TODO - the graph won't update the connections between the points until the page is refreshed but the dots will change
 class _WeightGraphState extends State<WeightGraph> {
   @override
   Widget build(BuildContext context) {
@@ -3343,7 +3341,6 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
   }
 }
 
-// TODO - finish implentation of the DefaultMealsMenu with creating new days on start up
 class DefaultMealsMenu extends StatelessWidget {
   const DefaultMealsMenu({super.key});
 
