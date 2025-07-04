@@ -254,13 +254,7 @@ class CurrentAppState extends ChangeNotifier {
     await loadDefaultData();
 
     // load in the foods from the database
-    foods = await getFoodsFromDatabase();
-    // set the next food ID based on the last food in the database
-    if (foods.isNotEmpty) {
-      nextFoodID = foods.last.id + 1; // Increment the last food ID
-    } else {
-      nextFoodID = 0; // Start from 0 if no foods exist
-    }
+    matchFoodsToDatabase();
 
     // load in the user meals from the database
     userMeals = await getUserMealsFromDatabase();
@@ -272,13 +266,7 @@ class CurrentAppState extends ChangeNotifier {
     }
 
     // load in the weights from the database
-    weightList = await getWeightsFromDatabase();
-    // set the next weight ID based on the last weight in the database
-    if (weightList.isNotEmpty) {
-      nextWeightID = weightList.last.id + 1; // Increment the last weight ID
-    } else {
-      nextWeightID = 0; // Start from 0 if no weights exist
-    }
+    matchWeightsToDatabase();
 
     // load in the days from the database
     days = await getDaysFromDatabase();
@@ -351,16 +339,13 @@ class CurrentAppState extends ChangeNotifier {
   Future<void> addFoodToDatabase(FoodData food) async {
     // Set the food's id to the nextFoodID before inserting
     food.id = nextFoodID;
-
+    
     // Insert the food into the database
     await database.insert(
       'foodData',
       food.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
-
-    // Add the food to the foods list
-    nextFoodID++;
 
     // Match the foods list to the database
     matchFoodsToDatabase();
@@ -426,7 +411,12 @@ class CurrentAppState extends ChangeNotifier {
     foods.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     // reset the nextFoodID
     if (foods.isNotEmpty) {
-      nextFoodID = foods.last.id + 1; // Increment the last food ID
+      // find the highest ID in the foods list and increment it for the next food
+      for (var food in foods) {
+        if (food.id >= nextFoodID) {
+          nextFoodID = food.id + 1; // Increment the last food ID
+        }
+      }
     } else {
       nextFoodID = 0; // Start from 0 if no foods exist
     }
@@ -475,6 +465,24 @@ class CurrentAppState extends ChangeNotifier {
     }
     else {
       throw Exception('product not found, please insert data for $barcode');
+    }
+  }
+
+  // print all foods in the database for debugging
+  void printAllFoodsFromDatabase() async {
+    // Query the database for all foods
+    final List<Map<String, dynamic>> maps = await database.query('foodData');
+
+    // If the database is empty, print a message
+    if (maps.isEmpty) {
+      print('No foods found in the database.');
+      return;
+    }
+
+    // Print the foods
+    for (final map in maps) {
+      print('Name: ${map['name']}');
+      print('ID: ${map['id']}');
     }
   }
 
@@ -626,7 +634,12 @@ class CurrentAppState extends ChangeNotifier {
     userMeals.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     // reset the nextUserMealID
     if (userMeals.isNotEmpty) {
-      nextUserMealID = userMeals.last.id + 1; // Increment the last user meal ID
+      // find the highest ID in the user meals list and increment it for the next user meal
+      for (var userMeal in userMeals) {
+        if (userMeal.id >= nextUserMealID) {
+          nextUserMealID = userMeal.id + 1; // Increment the last user meal ID
+        }
+      }
     } else {
       nextUserMealID = 0; // Start from 0 if no user meals exist
     }
@@ -731,15 +744,38 @@ class CurrentAppState extends ChangeNotifier {
   void matchWeightsToDatabase() async {
     // reset the weight list
     weightList = await getWeightsFromDatabase();
+    // sort the weight list by the actual date
+    await sortWeightListByDate();
     // sort the weight list by date
-    weightList.sort((a, b) => a.date.compareTo(b.date));
     // reset the last selected weight
     if (weightList.isNotEmpty) {
-      currentlySelectedWeight = weightList.last; // Set the last weight as the currently selected weight
+      // find the highest ID in the weight list and increment it for the next weight
+      for (var weight in weightList) {
+        if (weight.id >= nextWeightID) {
+          nextWeightID = weight.id + 1; // Increment the last weight ID
+        }
+      }
     } else {
       currentlySelectedWeight = WeightData(); // Reset to a default empty weight
     }
     notifyListeners();
+  }
+
+  // Sort the weight list by date
+  Future<void> sortWeightListByDate() async {
+    weightList.sort((a,b) {
+      var adate = a.date;
+      var bdate = b.date;
+      return adate.compareTo(bdate);
+    });
+
+    // print the sorted weight list for debugging
+    // for (var weight in weightList) {
+    //   print('Weight: ${weight.weight}, Date: ${weight.date}, ID: ${weight.id}');
+    // }
+
+    // put the weights in reverse order so the most recent weight is first
+    weightList = weightList.reversed.toList();
   }
 
   // Update the currently selected weight
@@ -987,7 +1023,12 @@ class CurrentAppState extends ChangeNotifier {
     days.sort((a, b) => a.date.compareTo(b.date));
     // reset the nextDayID
     if (days.isNotEmpty) {
-      nextDayID = days.last.id + 1; // Increment the last day ID
+      // find the highest ID in the days list and increment it for the next day
+      for (var day in days) {
+        if (day.id >= nextDayID) {
+          nextDayID = day.id + 1; // Increment the last day ID
+        }
+      }
     } else {
       nextDayID = 0; // Start from 0 if no days exist
     }
@@ -1344,23 +1385,26 @@ class _MealBoxState extends State<MealBox> {
                 color: theme.colorScheme.primary,
               ),
               child: InkWell(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      spacing: 5,
-                      children: [
-                        // Sets the meal name
-                        Text(widget.meal.mealName, style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.left),
-                        Icon(Icons.edit, color:theme.textTheme.bodySmall?.color,),
-                      ],
-                    ),
-                    // Sets the calories for the meal
-                    Text(
-                      '${widget.meal.getCalories()}',
-                      style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.right
-                    ),
-                  ],
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        spacing: 5,
+                        children: [
+                          // Sets the meal name
+                          Text(widget.meal.mealName, style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.left),
+                          Icon(Icons.edit, color:theme.textTheme.bodySmall?.color,),
+                        ],
+                      ),
+                      // Sets the calories for the meal
+                      Text(
+                        '${widget.meal.getCalories()}',
+                        style: TextStyle(fontSize: 30, color:theme.textTheme.bodySmall?.color), textAlign: TextAlign.right
+                      ),
+                    ],
+                  ),
                 ),
                 onTap: () {
                   // Set the currently selected meal in app state
@@ -1380,12 +1424,15 @@ class _MealBoxState extends State<MealBox> {
                     color: isAlt ? null : theme.colorScheme.primaryContainer ,
                   ),
                   child: InkWell(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                      Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
-                      Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
-                      ],
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(food.foodData.name, style: TextStyle(fontSize: 20), textAlign: TextAlign.left),
+                          Text('${(food.foodData.calories * food.serving).ceil()}', style: TextStyle(fontSize: 20), textAlign: TextAlign.right),
+                        ],
+                      ),
                     ),
                     onTap: () {
                       // Set the selected food in app state if needed
@@ -4000,6 +4047,20 @@ class _EditFoodMenuState extends State<EditFoodMenu> {
             mainAxisAlignment: MainAxisAlignment.start,
             spacing: 15,
             children: [
+              // name field
+              SizedBox(
+                width: 350,
+                height: 50,
+                child: TextField(
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: tempFoodData.name,
+                  ),
+                  onChanged: (value) {
+                    tempFoodData.name = value; // Update the name value
+                  },
+                ),
+              ),
               SizedBox(height: 0,),
               Text('Calories and Macros', style: TextStyle(fontSize: 17,decoration: TextDecoration.underline,),),
               Row(
