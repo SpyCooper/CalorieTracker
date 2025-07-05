@@ -19,18 +19,10 @@ can be deleted at anytime.
 # Images
 Images of the app in use
 
-<img src="Calorie_tracker_photos/Homescreen_light.png" alt="Home screen with light mode" width="300">
+<img src="Calorie_tracker_photos/Homescreen_light.png" alt="Home screen with light mode" width="300"> <img src="Calorie_tracker_photos/Homescreen_dark.png" alt="Home screen with dark mode" width="300">
 
-<img src="Calorie_tracker_photos/Homescreen_dark.png" alt="Home screen with dark mode" width="300">
+<img src="Calorie_tracker_photos/progress_page_1.png" alt="Top portion of the progress screen" width="300"> <img src="Calorie_tracker_photos/progress_page_2.png" alt="Bottom portion of the progress screen" width="300">
 
-<img src="Calorie_tracker_photos/progress_page_1.png" alt="Top portion of the progress screen" width="300">
+<img src="Calorie_tracker_photos/settings_page.png" alt="Settings screen" width="300"> <img src="Calorie_tracker_photos/food_nutrition_facts.png" alt="Food nutrition facts screen" width="300">
 
-<img src="Calorie_tracker_photos/progress_page_2.png" alt="Bottom portion of the progress screen" width="300">
-
-<img src="Calorie_tracker_photos/settings_page.png" alt="Settings screen" width="300">
-
-<img src="Calorie_tracker_photos/food_nutrition_facts.png" alt="Food nutrition facts screen" width="300">
-
-<img src="Calorie_tracker_photos/weight_log.png" alt="Weight logging screen" width="300">
-
-<img src="Calorie_tracker_photos/user_meal_edit.png" alt="Editing a user meal screen" width="300">
+<img src="Calorie_tracker_photos/weight_log.png" alt="Weight logging screen" width="300"> <img src="Calorie_tracker_photos/user_meal_edit.png" alt="Editing a user meal screen" width="300">
