@@ -1882,7 +1882,7 @@ class EditMealMenu extends StatelessWidget {
           // Remove button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
               side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
@@ -1911,6 +1911,7 @@ class RemoveMealPopUp extends StatelessWidget {
       height: 200,
       child: AlertDialog(
         title: const Text('Are you sure you want to remove this meal?'),
+        content: const Text('This will remove the meal from today\'s meals. You can choose to remove it from future days as well.'),
         actions: [
           // Cancel button
           TextButton(
@@ -2075,7 +2076,7 @@ class _AddNewMealState extends State<AddNewMeal> {
           // Save Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary, // text color
               side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
@@ -2205,7 +2206,7 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           if (context.read<CurrentAppState>().isAddFoodMenuOpen)
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary, // text color
               side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
@@ -2226,17 +2227,41 @@ class _FoodNutritionFactsState extends State<FoodNutritionFacts> {
           if (!context.read<CurrentAppState>().isAddFoodMenuOpen)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
-              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
+              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14)),
               ),
               child: Text('Remove Food', style: TextStyle(fontSize: 20)),
               onPressed: () {
-                // remove the food from the meal
-                appState.removeFoodFromMeal(appState.currentlySelectedMeal, appState.currentlySelectedFood);
-                Navigator.of(context).pop(); // Close the nutrition facts page
-              },
-            ),
+              // Show a confirmation dialog before removing the food
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Confirm Removal'),
+                  content: Text('Are you sure you want to remove this food from the meal?'),
+                  actions: [
+                  TextButton(
+                    child: Text('Cancel'),
+                    onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                    },
+                  ),
+                  TextButton(
+                    child: Text('Remove', style: TextStyle(color: Color.fromARGB(255, 179, 14, 14))),
+                    onPressed: () {
+                    // Remove the food from the meal
+                    appState.removeFoodFromMeal(appState.currentlySelectedMeal, appState.currentlySelectedFood);
+                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop(); // Close the nutrition facts page
+                    },
+                  ),
+                  ],
+                );
+                },
+              );
+            },
+          ),
         ],
       ),
     );
@@ -2382,7 +2407,7 @@ class _UserMealNutritionFactsState extends State<UserMealNutritionFacts> {
                 SizedBox(height: 25),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    fixedSize: const Size(250, 50),
+                    fixedSize: const Size(350, 50),
                     foregroundColor: theme.colorScheme.primary,
                     side: BorderSide(width: 3, color: theme.colorScheme.primary),
                   ),
@@ -2914,7 +2939,7 @@ class _LogNewWeightMenuState extends State<LogNewWeightMenu> {
           // Save Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary, // text color
               side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
@@ -3026,22 +3051,44 @@ class _EditWeightMenuState extends State<EditWeightMenu> {
           // Spacer
           SizedBox(height: 25,),
           // Delete Button
-          ElevatedButton(
+            ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
               side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
             child: Text('Delete', style: TextStyle(fontSize: 20)),
             onPressed: () => {
-              // Remove the weight data from the weight list in app state
-              appState.removeWeight(appState.currentlySelectedWeight),
-              // Pop back to the weight log menu
-              Navigator.of(context).pop(),
+              showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                title: Text('Confirm Deletion'),
+                content: Text('Are you sure you want to delete this weight entry? This action cannot be undone.'),
+                actions: [
+                  TextButton(
+                  child: Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  ),
+                  TextButton(
+                  child: Text('Delete', style: TextStyle(color: Color.fromARGB(255, 179, 14, 14))),
+                  onPressed: () {
+                    // Remove the weight data from the weight list in app state
+                    appState.removeWeight(appState.currentlySelectedWeight);
+                    // Close the dialog and navigate back to the weight log menu
+                    Navigator.of(context).pop();
+                    Navigator.of(context).pop();
+                  },
+                  ),
+                ],
+                );
+              },
+              ),
             },
           ),
         ]
-      
       )
     );
   }
@@ -3370,7 +3417,7 @@ class _CaloriesAndMacrosGoalsMenuState extends State<CaloriesAndMacrosGoalsMenu>
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary, // text color
               side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
@@ -3992,7 +4039,7 @@ class _CreateNewFoodMenuState extends State<CreateNewFoodMenu> {
           // Save Button
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary, // text color
               side: BorderSide(width: 3, color: theme.colorScheme.primary)
               ),
@@ -4169,7 +4216,7 @@ class _EditFoodMenuState extends State<EditFoodMenu> {
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  fixedSize: const Size(250, 50),
+                  fixedSize: const Size(350, 50),
                   foregroundColor: theme.colorScheme.primary, // text color
                   side: BorderSide(width: 3, color: theme.colorScheme.primary)
                   ),
@@ -4327,7 +4374,7 @@ class _CreateNewUserMealState extends State<CreateNewUserMeal> {
                 // Save Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    fixedSize: const Size(250, 50),
+                    fixedSize: const Size(350, 50),
                     foregroundColor: theme.colorScheme.primary, // text color
                     side: BorderSide(width: 3, color: theme.colorScheme.primary)
                     ),
@@ -4491,20 +4538,43 @@ class _EditUserMealState extends State<EditUserMeal> {
                 // Delete Button
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    fixedSize: const Size(250, 50),
-                    foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
-                    side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
-                    ),
+                  fixedSize: const Size(350, 50),
+                  foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+                  side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
+                  ),
                   child: Text('Delete Meal', style: TextStyle(fontSize: 20)),
                   onPressed: () {
-                    // Delete the user meal from the list
-                    appState.deleteUserMeal(appState.currentlySelectedUserMeal);
-                    // Navigate back to the saved foods menu and reset the tempData
-                    Navigator.of(context).pop();
+                  // Show a confirmation dialog before deleting the meal
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Confirm Deletion'),
+                      content: Text('Are you sure you want to delete this meal? This action cannot be undone.'),
+                      actions: [
+                      TextButton(
+                        child: Text('Cancel'),
+                        onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                        },
+                      ),
+                      TextButton(
+                        child: Text('Delete', style: TextStyle(color: Color.fromARGB(255, 179, 14, 14))),
+                        onPressed: () {
+                        // Delete the user meal from the list
+                        appState.deleteUserMeal(appState.currentlySelectedUserMeal);
+                        // Close the dialog and navigate back
+                        Navigator.of(context).pop();
+                        Navigator.of(context).pop();
+                        },
+                      ),
+                      ],
+                    );
+                    },
+                  );
                   },
                 ),
               ]
-            
             ),
           ]
         ),
@@ -4732,17 +4802,41 @@ class _FoodFactsForUserMealsState extends State<FoodFactsForUserMeals> {
           if (widget.foodInMeal)
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                fixedSize: const Size(350, 50),
-                foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
-                side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
+              fixedSize: const Size(350, 50),
+              foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
+              side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
               child: Text('Remove from Meal', style: TextStyle(fontSize: 20)),
               onPressed: () {
-                // Remove the food from the meal
-                widget.userMeal.removeFood(appState.currentlySelectedFood);
-                Navigator.of(context).pop();
-              },
-            ),
+              // Show a confirmation dialog before removing the food
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                return AlertDialog(
+                  title: Text('Confirm Removal'),
+                  content: Text('Are you sure you want to remove this food from the meal?'),
+                  actions: [
+                  TextButton(
+                    child: Text('Cancel'),
+                    onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                    },
+                  ),
+                  TextButton(
+                    child: Text('Remove', style: TextStyle(color: Color.fromARGB(255, 179, 14, 14))),
+                    onPressed: () {
+                    // Remove the food from the meal
+                    widget.userMeal.removeFood(appState.currentlySelectedFood);
+                    Navigator.of(context).pop(); // Close the dialog
+                    Navigator.of(context).pop(); // Close the nutrition facts page
+                    },
+                  ),
+                  ],
+                );
+                },
+              );
+            },
+          ),
         ],
       ),
     );
@@ -4936,7 +5030,7 @@ class _AddScannedFoodUIState extends State<AddScannedFoodUI> {
           SizedBox(height: 25,),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              fixedSize: const Size(250, 50),
+              fixedSize: const Size(350, 50),
               foregroundColor: theme.colorScheme.primary, // text color
               side: BorderSide(width: 3, color: theme.colorScheme.primary)
             ),
@@ -4977,7 +5071,7 @@ class ClearDataMenu extends StatelessWidget {
             SizedBox(height: 25,),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                fixedSize: const Size(250, 50),
+                fixedSize: const Size(350, 50),
                 foregroundColor: Color.fromARGB(255, 179, 14, 14), // text color
                 side: BorderSide(width: 3, color: Color.fromARGB(255, 179, 14, 14))
               ),
